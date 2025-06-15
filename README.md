@@ -7,60 +7,65 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+# SO Rahil - Stock Opname Event & Flutter App Management
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Aplikasi ini adalah sistem manajemen Stock Opname Event (SO Event) berbasis Laravel, dengan fitur backend dan frontend untuk proses stock opname, pelaporan, serta manajemen file APK aplikasi Flutter.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Fitur Utama
+- Manajemen event Stock Opname (buat, aktifkan, selesaikan, batalkan)
+- Entry stok fisik produk per event SO
+- Finalisasi dan laporan hasil SO Event
+- API untuk frontend dan aplikasi mobile
+- Upload, download, dan manajemen file APK Flutter
+- Hak akses admin/user
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Instalasi
+1. **Clone repository**
+2. **Install dependency**
+   ```bash
+   composer install
+   npm install && npm run build
+   ```
+3. **Copy .env**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+4. **Konfigurasi database** di file `.env`
+5. **Migrasi dan seeder**
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
+   Seeder default akan membuat user admin:
+   - Username: `admin`
+   - Password: `123123`
 
-## Learning Laravel
+## Manajemen APK Flutter
+- Upload APK melalui menu admin (route: `/admin/flutter-app`)
+- File APK akan tersimpan di: `storage/app/flutter_apks/`
+- Download APK publik: endpoint tersedia untuk aplikasi mobile
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## API Utama
+- Endpoint SO Event: entry, finalisasi, hapus, laporan
+- Endpoint APK: versi terbaru, download APK
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Struktur Folder Penting
+- `app/Http/Controllers/` : Controller API, admin, dan frontend
+- `app/Models/` : Model Eloquent
+- `database/migrations/` : Migrasi tabel
+- `database/seeders/` : Seeder data awal
+- `resources/views/` : Blade template
+- `storage/app/flutter_apks/` : Lokasi file APK Flutter
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Pengembangan
+- Laravel 10+
+- TailwindCSS untuk frontend
+- Mendukung integrasi aplikasi Flutter
 
-## Laravel Sponsors
+## Catatan
+- Pastikan permission folder `storage/app/flutter_apks` dapat ditulis web server.
+- Untuk upload APK, maksimal 100MB per file.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Aplikasi ini dikembangkan untuk kebutuhan internal manajemen stok dan distribusi aplikasi mobile. Untuk kontribusi atau pertanyaan, silakan hubungi admin proyek.
