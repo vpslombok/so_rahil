@@ -18,7 +18,7 @@ class ProductsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
 
     public function model(array $row)
     {
-        $barcode = $row['barcode'] ?? null;
+        $barcode = isset($row['barcode']) ? trim((string)$row['barcode']) : null;
         $productCode = $row['kode_produk'] ?? null;
         $rackName = $row['nama_rak'] ?? null; // Ambil nama rak
 
@@ -34,7 +34,7 @@ class ProductsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
         if (!empty($rackName)) {
             $rack = Rack::firstOrCreate(
                 ['name' => $rackName],
-                ['location' => 'Default Location From Import'] // Anda bisa menambahkan default value lain jika perlu
+                ['location' => '-'] // Anda bisa menambahkan default value lain jika perlu
             );
             $rackId = $rack->id;
         }
