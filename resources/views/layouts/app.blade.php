@@ -42,7 +42,8 @@
             position: sticky;
             top: 0;
             /* Akan menempel di bagian atas viewport setelah navbar */
-            height: calc(100vh - 56px); /* Tinggi viewport dikurangi tinggi navbar (sesuaikan 56px jika tinggi navbar Anda berbeda) */
+            height: calc(100vh - 56px);
+            /* Tinggi viewport dikurangi tinggi navbar (sesuaikan 56px jika tinggi navbar Anda berbeda) */
             flex-shrink: 0;
             /* Mencegah sidebar menyusut */
             /* overflow-y sudah dihandle oleh <nav id="sidebarMenuMain"> di dalam sidebar.blade.php */
@@ -52,7 +53,8 @@
             flex-grow: 1;
             /* Tinggi content-wrapper akan mengikuti tinggi .main-wrapper,
                dan .main-wrapper tingginya akan mengikuti tinggi viewport dikurangi navbar */
-            height: calc(100vh - 56px); /* Sama dengan sidebar-wrapper untuk konsistensi */
+            height: calc(100vh - 56px);
+            /* Sama dengan sidebar-wrapper untuk konsistensi */
             overflow-x: auto;
             /* Handle tabel lebar */
             /* Padding akan ditambahkan di dalam halaman konten, misal dengan container-fluid */
@@ -60,7 +62,8 @@
 
         .navbar-laravel {
             /* Ganti nama kelas jika ada konflik */
-            z-index: 1035; /* Lebih tinggi dari sidebar dan offcanvas backdrop */
+            z-index: 1035;
+            /* Lebih tinggi dari sidebar dan offcanvas backdrop */
             /* Lebih tinggi dari offcanvas backdrop */
         }
 
@@ -73,7 +76,8 @@
         .sticky-top {
             position: sticky;
             top: 0;
-            z-index: 1030; /* Pastikan di atas konten lain tapi di bawah modal jika perlu */
+            z-index: 1030;
+            /* Pastikan di atas konten lain tapi di bawah modal jika perlu */
             /* Pastikan di atas konten lain tapi di bawah modal jika perlu */
         }
 
@@ -130,16 +134,20 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(255, 255, 255, 0.85); /* Latar belakang semi-transparan */
+            background-color: rgba(255, 255, 255, 0.85);
+            /* Latar belakang semi-transparan */
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999; /* Pastikan di atas segalanya */
+            z-index: 9999;
+            /* Pastikan di atas segalanya */
             opacity: 1;
-            transition: opacity 0.3s ease-out; /* Transisi untuk fade out */
+            transition: opacity 0.3s ease-out;
+            /* Transisi untuk fade out */
         }
     </style>
     @stack('styles') {{-- Untuk CSS tambahan per halaman --}}
+    <link rel="icon" type="image/png" href="{{ asset('favicon.ico') }}">
 </head>
 
 <body>
@@ -156,25 +164,25 @@
 
     // Item Navigasi Utama (untuk semua user yang login)
     $main_nav_items = [
-        ['route_name' => 'dashboard', 'active_pattern' => 'dashboard*', 'icon' => 'bi-speedometer2', 'text' => 'Dashboard Produk'],
-        ['route_name' => 'stock_check.index', 'active_pattern' => 'stock_check.*', 'icon' => 'bi-clipboard-check-fill', 'text' => 'Entry Stok Fisik'],
-        ['route_name' => 'so_by_selected.index', 'active_pattern' => 'so_by_selected.*', 'icon' => 'bi-check-square-fill', 'text' => 'Pilih SO'],
-       ['route_name' => 'stock_audit_report.summary', 'active_pattern' => 'stock_audit_report.*', 'icon' => 'bi-file-earmark-text-fill', 'text' => 'Laporan Selisih'],
-        ['route_name' => 'documentation', 'active_pattern' => 'documentation', 'icon' => 'bi-book-half', 'text' => 'Documentation'],
+    ['route_name' => 'dashboard', 'active_pattern' => 'dashboard*', 'icon' => 'bi-speedometer2', 'text' => 'Dashboard Produk'],
+    ['route_name' => 'stock_check.index', 'active_pattern' => 'stock_check.*', 'icon' => 'bi-clipboard-check-fill', 'text' => 'Entry Stok Fisik'],
+    ['route_name' => 'so_by_selected.index', 'active_pattern' => 'so_by_selected.*', 'icon' => 'bi-check-square-fill', 'text' => 'Pilih SO'],
+    ['route_name' => 'stock_audit_report.summary', 'active_pattern' => 'stock_audit_report.*', 'icon' => 'bi-file-earmark-text-fill', 'text' => 'Laporan Selisih'],
+    ['route_name' => 'documentation', 'active_pattern' => 'documentation', 'icon' => 'bi-book-half', 'text' => 'Documentation'],
     ];
 
     // Item Navigasi Khusus Admin
     $admin_nav_items = [];
     if (Auth::check() && Auth::user()->role == 'admin') {
-        $admin_nav_items = [
-            ['route_name' => 'admin.users.index', 'active_pattern' => 'admin.users.*', 'icon' => 'bi-people-fill', 'text' => 'Manajemen User'],
-            ['route_name' => 'admin.so-events.index', 'active_pattern' => 'admin.so-events.*', 'icon' => 'bi-calendar2-event-fill', 'text' => 'Manajemen SO'],
-            ['route_name' => 'admin.so_monitor.index', 'active_pattern' => 'admin.so_monitor.*', 'icon' => 'bi-binoculars-fill', 'text' => 'Monitor SO'],
-            ['route_name' => 'admin.racks.index', 'active_pattern' => 'admin.racks.*', 'icon' => 'bi-bookshelf', 'text' => 'Manajemen Rak'],
-            ['route_name' => 'admin.api_log.index', 'active_pattern' => 'admin.api_log.*', 'icon' => 'bi-journal-text', 'text' => 'Log API'],
-            ['route_name' => 'admin.flutter_app.manager', 'active_pattern' => 'admin.flutter_app.*', 'icon' => 'bi-phone-fill', 'text' => 'Upload Aplikasi Flutter'],
-            ['route_name' => 'admin.database.utility', 'active_pattern' => 'admin.database.utility', 'icon' => 'bi-database-gear', 'text' => 'Utilitas Database'],
-        ];
+    $admin_nav_items = [
+    ['route_name' => 'admin.users.index', 'active_pattern' => 'admin.users.*', 'icon' => 'bi-people-fill', 'text' => 'Manajemen User'],
+    ['route_name' => 'admin.so-events.index', 'active_pattern' => 'admin.so-events.*', 'icon' => 'bi-calendar2-event-fill', 'text' => 'Manajemen SO'],
+    ['route_name' => 'admin.so_monitor.index', 'active_pattern' => 'admin.so_monitor.*', 'icon' => 'bi-binoculars-fill', 'text' => 'Monitor SO'],
+    ['route_name' => 'admin.racks.index', 'active_pattern' => 'admin.racks.*', 'icon' => 'bi-bookshelf', 'text' => 'Manajemen Rak'],
+    ['route_name' => 'admin.api_log.index', 'active_pattern' => 'admin.api_log.*', 'icon' => 'bi-journal-text', 'text' => 'Log API'],
+    ['route_name' => 'admin.flutter_app.manager', 'active_pattern' => 'admin.flutter_app.*', 'icon' => 'bi-phone-fill', 'text' => 'Upload Aplikasi Flutter'],
+    ['route_name' => 'admin.database.utility', 'active_pattern' => 'admin.database.utility', 'icon' => 'bi-database-gear', 'text' => 'Utilitas Database'],
+    ];
     }
     @endphp
 

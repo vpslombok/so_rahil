@@ -1,5 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/lotim262/public_html/so.lotim.xyz
+    - export DEPLOYPATH=/home/lotim262/folder_so
     - cp -r * $DEPLOYPATH

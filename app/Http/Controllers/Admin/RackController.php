@@ -31,7 +31,7 @@ class RackController extends Controller
         Rack::create($request->all());
 
         return redirect()->route('admin.racks.index')
-                         ->with('success_message', 'Rak berhasil ditambahkan.');
+            ->with('success_message', 'Rak berhasil ditambahkan.');
     }
 
     public function show(Rack $rack)
@@ -60,30 +60,31 @@ class RackController extends Controller
         $rack->update($request->all());
 
         return redirect()->route('admin.racks.index')
-                         ->with('success_message', 'Rak berhasil diperbarui.');
+            ->with('success_message', 'Rak berhasil diperbarui.');
     }
 
     public function destroy(Rack $rack)
     {
         try {
-            // Check if the rack has any associated products
+            // Hapus semua produk yang ada di dalam rak ini
             if ($rack->products()->exists()) {
-                return redirect()->route('admin.racks.index')
-                                 ->with('error_message', "Rak '{$rack->name}' tidak dapat dihapus karena masih memiliki produk terkait.");
+                foreach ($rack->products as $product) {
+                    $product->delete();
+                }
             }
-
             $rackName = $rack->name;
             $rack->delete();
-
             return redirect()->route('admin.racks.index')
-                             ->with('success_message', "Rak '{$rackName}' berhasil dihapus.");
+                ->with('success_message', "Rak '{$rackName}' dan seluruh produk di dalamnya berhasil dihapus.")
+                ->with('success_message_raw', true);
         } catch (\Illuminate\Database\QueryException $e) {
-            // Menangani error jika ada constraint foreign key yang mencegah penghapusan
             return redirect()->route('admin.racks.index')
-                             ->with('error_message', 'Rak tidak dapat dihapus karena mungkin masih terkait dengan data lain.');
+                ->with('error_message', 'Rak tidak dapat dihapus karena mungkin masih terkait dengan data lain.')
+                ->with('error_message_raw', true);
         } catch (\Exception $e) {
             return redirect()->route('admin.racks.index')
-                             ->with('error_message', 'Terjadi kesalahan saat menghapus rak.');
+                ->with('error_message', 'Terjadi kesalahan saat menghapus rak.')
+                ->with('error_message_raw', true);
         }
     }
 }

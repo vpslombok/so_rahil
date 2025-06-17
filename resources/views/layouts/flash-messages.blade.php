@@ -6,7 +6,7 @@
         Swal.fire({
             icon: 'success',
             title: 'Sukses!',
-            text: '{{ session('success_message_product') ?? session('success_message') }}',
+            text: `{!! session('success_message_product') ?? session('success_message') !!}`,
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
@@ -19,7 +19,7 @@
         Swal.fire({
             icon: 'error',
             title: 'Error!',
-            text: '{{ session('error_message_product') ?? session('error_message') }}',
+            text: `{!! session('error_message_product') ?? session('error_message') !!}`,
         });
         @endif
 
@@ -39,7 +39,7 @@
         Swal.fire({
             icon: 'info',
             title: 'Info',
-            text: '{{ session('status') }}',
+            text: `{!! session('status') !!}`,
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
@@ -49,5 +49,3 @@
     });
 </script>
 @endpush
-
-{{-- Include the flash messages --}}
