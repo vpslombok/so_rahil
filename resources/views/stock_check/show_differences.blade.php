@@ -71,8 +71,15 @@
             </div>
 
             @if($differences->hasPages())
-            <div class="d-flex justify-content-center mt-3">
-                {{ $differences->appends(request()->except('page'))->links('vendor.pagination.custom') }}
+            <div class="d-flex justify-content-between align-items-center flex-wrap mt-3">
+                <div>
+                    <span class="text-muted">
+                        Menampilkan {{ $differences->firstItem() }} - {{ $differences->lastItem() }} dari {{ $differences->total() }} produk
+                    </span>
+                </div>
+                <div>
+                    {{ $differences->appends(request()->except('page'))->links('vendor.pagination.bootstrap-5') }}
+                </div>
             </div>
             @endif
             @endif

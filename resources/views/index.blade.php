@@ -44,11 +44,11 @@
                             <select name="rack_id_filter" id="rack_id_filter" class="form-select form-select-sm" onchange="this.form.submit()" title="Filter berdasarkan Rak">
                                 <option value="">Semua Rak</option>
                                 @if(isset($racks) && $racks->count() > 0)
-                                    @foreach($racks as $rack_item_filter)
-                                    <option value="{{ $rack_item_filter->id }}" {{ (isset($selectedRackId) && $selectedRackId == $rack_item_filter->id) ? 'selected' : '' }}>
-                                        {{ $rack_item_filter->name }}
-                                    </option>
-                                    @endforeach
+                                @foreach($racks as $rack_item_filter)
+                                <option value="{{ $rack_item_filter->id }}" {{ (isset($selectedRackId) && $selectedRackId == $rack_item_filter->id) ? 'selected' : '' }}>
+                                    {{ $rack_item_filter->name }}
+                                </option>
+                                @endforeach
                                 @endif
                             </select>
                         </div>
@@ -207,8 +207,15 @@
                     </table>
                     {{-- Pagination --}}
                     @if($products_data->hasPages())
-                    <div class="d-flex justify-content-center mt-3">
-                        {{ $products_data->appends(request()->query())->links('vendor.pagination.custom') }}
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mt-3">
+                        <div>
+                            <span class="text-muted">
+                                Menampilkan {{ $products_data->firstItem() }} - {{ $products_data->lastItem() }} dari {{ $products_data->total() }} produk
+                            </span>
+                        </div>
+                        <div>
+                            {{ $products_data->appends(request()->query())->onEachSide(1)->links('vendor.pagination.bootstrap-5') }}
+                        </div>
                     </div>
                     @endif
                 </div>

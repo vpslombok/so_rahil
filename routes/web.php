@@ -98,7 +98,7 @@ Route::middleware(['auth'])->group(function () {
     //------------------------------------------------------------------
     Route::get('/stock-audit-report', [ReportController::class, 'finalizedStockOpnameReport'])->name('stock_audit_report.index');
     Route::get('/stock-audit-report', [ReportController::class, 'finalizedStockOpnameReport'])->name('stock_audit_report.summary'); // Ganti nama rute
-        Route::delete('/stock-audit-report/delete', [ReportController::class, 'destroyFinalizedStockOpnameGroup'])->name('stock_audit_report.destroy_group');
+    Route::delete('/stock-audit-report/delete', [ReportController::class, 'destroyFinalizedStockOpnameGroup'])->name('stock_audit_report.destroy_group');
     Route::get('/stock-audit-report/{nomor_nota}', [ReportController::class, 'showFinalizedStockOpnameDetailsByNota'])->name('stock_audit_report.details_by_nota');
 
     Route::get('/application-features', [PageController::class, 'applicationFeatures'])->name('documentation'); // Rute tetap 'documentation' agar sidebar tidak perlu diubah
@@ -154,19 +154,29 @@ Route::middleware(['auth'])->group(function () {
         //------------------------------------------------------------------
         // Management Database Utility (Admin)
         //------------------------------------------------------------------
-        Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
-            Route::get('/database-utility', [DatabaseUtilityController::class, 'index'])
-                ->name('database.utility'); // Halaman utama
+        Route::get('/database-utility', [DatabaseUtilityController::class, 'index'])
+            ->name('database.utility'); // Halaman utama
 
-            Route::get('/database-utility/tables/{table}/data', [DatabaseUtilityController::class, 'showTableData'])
-                ->name('database.table.data'); // Lihat data tabel
+        // Route untuk backup database
+        Route::get('/database-utility/backup/create', [DatabaseUtilityController::class, 'createBackup'])
+            ->name('database.backup.create');
+        Route::get('/database-utility/backup/download/{filename}', [DatabaseUtilityController::class, 'downloadBackup'])
+            ->name('database.backup.download');
+        Route::post('/database-utility/backup/restore/{filename}', [DatabaseUtilityController::class, 'restoreBackup'])
+            ->name('database.backup.restore');
+        Route::delete('/database-utility/backup/delete/{filename}', [DatabaseUtilityController::class, 'deleteBackup'])
+            ->name('database.backup.delete');
+        Route::get('/database-utility/migrate', [DatabaseUtilityController::class, 'runMigration'])
+            ->name('database.migrate');
 
-            Route::post('/database-utility/tables', [DatabaseUtilityController::class, 'storeTable'])
-                ->name('database.table.store'); // Buat tabel baru
+        Route::get('/database-utility/tables/{table}/data', [DatabaseUtilityController::class, 'showTableData'])
+            ->name('database.table.data'); // Lihat data tabel
 
-            Route::delete('/database-utility/tables/{table}', [DatabaseUtilityController::class, 'destroyTable'])
-                ->name('database.table.destroy'); // Hapus tabel
-        });
+        Route::post('/database-utility/tables', [DatabaseUtilityController::class, 'storeTable'])
+            ->name('database.table.store'); // Buat tabel baru
+
+        Route::delete('/database-utility/tables/{table}', [DatabaseUtilityController::class, 'destroyTable'])
+            ->name('database.table.destroy'); // Hapus tabel
         //------------------------------------------------------------------
         // Rute untuk halaman log API (admin.api_log.index)
         //------------------------------------------------------------------

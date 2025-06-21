@@ -163,15 +163,15 @@
                         <option value="100" {{ ($perPageSelected ?? 5) == 100 ? 'selected' : '' }}>100</option>
                     </select>
                     <span class="ms-2 text-muted">item per halaman</span>
-                     {{-- Preserve other query parameters if any (though not strictly needed here as form action is specific) --}}
+                    {{-- Preserve other query parameters if any (though not strictly needed here as form action is specific) --}}
                     @foreach(request()->except(['page', 'per_page']) as $key => $value)
-                        @if(is_array($value))
-                            @foreach($value as $sub_value)
-                                <input type="hidden" name="{{ $key }}[]" value="{{ $sub_value }}">
-                            @endforeach
-                        @else
-                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                        @endif
+                    @if(is_array($value))
+                    @foreach($value as $sub_value)
+                    <input type="hidden" name="{{ $key }}[]" value="{{ $sub_value }}">
+                    @endforeach
+                    @else
+                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endif
                     @endforeach
                 </form>
             </div>
@@ -216,17 +216,17 @@
                                         <div>
                                             <h6 class="mb-0">{{ $item->product->name ?? 'Produk Tidak Ditemukan' }}</h6>
                                             @php
-                                                $code = $item->product->product_code ?? null;
-                                                $barcode = $item->product->barcode ?? null;
-                                                $displayIdentifier = 'N/A';
+                                            $code = $item->product->product_code ?? null;
+                                            $barcode = $item->product->barcode ?? null;
+                                            $displayIdentifier = 'N/A';
 
-                                                if ($code && $barcode) {
-                                                    $displayIdentifier = $code . ' / ' . $barcode;
-                                                } elseif ($code) {
-                                                    $displayIdentifier = $code;
-                                                } elseif ($barcode) {
-                                                    $displayIdentifier = $barcode;
-                                                }
+                                            if ($code && $barcode) {
+                                            $displayIdentifier = $code . ' / ' . $barcode;
+                                            } elseif ($code) {
+                                            $displayIdentifier = $code;
+                                            } elseif ($barcode) {
+                                            $displayIdentifier = $barcode;
+                                            }
                                             @endphp
                                             <small class="text-muted">{{ $displayIdentifier }}</small>
                                         </div>
@@ -262,8 +262,15 @@
                 </div>
 
                 @if($selectedProducts->hasPages())
-                <div class="mt-3 d-flex justify-content-center">
-                    {{ $selectedProducts->links('vendor.pagination.bootstrap-5') }}
+                <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <span class="text-muted">
+                            Menampilkan {{ $selectedProducts->firstItem() }} - {{ $selectedProducts->lastItem() }} dari {{ $selectedProducts->total() }} produk
+                        </span>
+                    </div>
+                    <div>
+                     
+                    </div>
                 </div>
                 @endif
             </form>

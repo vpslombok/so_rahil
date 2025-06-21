@@ -7,7 +7,7 @@
     <h1 class="h3 mb-4 text-gray-800">
         Entry Stok Fisik: <span class="text-primary">{{ $currentEvent->name ?? 'SO Tidak Dipilih' }}</span>
         @if($displayNomorNota)
-            <small class="text-muted">(No. Nota: {{ $displayNomorNota }})</small>
+        <small class="text-muted">(No. Nota: {{ $displayNomorNota }})</small>
         @endif
     </h1>
 
@@ -47,56 +47,63 @@
             </div>
             <div class="card-body">
                 @if(!isset($productsForEntry) || $productsForEntry->isEmpty())
-                    <p class="text-center">Tidak ada produk yang terdaftar untuk SO ini atau semua produk sudah di-entry pada halaman sebelumnya.</p>
-                    <p class="text-center">Jika Anda baru saja memilih SO, pastikan SO tersebut memiliki produk yang telah ditentukan.</p>
+                <p class="text-center">Tidak ada produk yang terdaftar untuk SO ini atau semua produk sudah di-entry pada halaman sebelumnya.</p>
+                <p class="text-center">Jika Anda baru saja memilih SO, pastikan SO tersebut memiliki produk yang telah ditentukan.</p>
                 @else
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="entryStockTable">
-                            <thead>
-                                <tr>
-                                    <th style="width: 5%;">No</th>
-                                    <th style="width: 15%;">Kode Produk</th>
-                                    <th style="width: 20%;">Barcode</th>
-                                    <th>Nama Produk</th>
-                                    {{-- <th style="width: 10%;">Stok Sistem (saat SO disiapkan)</th> --}}
-                                    <th style="width: 15%;" class="text-center">Stok Fisik (Input)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($productsForEntry as $index => $item)
-                                    <tr>
-                                        <td>{{ $productsForEntry->firstItem() + $index }}</td>
-                                        <td data-product-code="{{ $item->product->product_code ?? '' }}">{{ $item->product->product_code ?? 'N/A' }}</td>
-                                        <td data-product-barcode="{{ $item->product->barcode ?? '' }}">{{ $item->product->barcode ?? 'N/A' }}</td>
-                                        <td>{{ $item->product->name ?? 'Produk Tidak Ditemukan' }}</td>
-                                        {{-- <td class="text-center">{{ $item->system_stock ?? 0 }}</td> --}}
-                                        <td>
-                                            {{-- $item->id di sini adalah ID dari TempStockEntry --}}
-                                            <input type="hidden" name="products[{{ $item->id }}][temp_stock_entry_id]" value="{{ $item->id }}">
-                                            <input type="number"
-                                                   name="products[{{ $item->id }}][recorded_stock]"
-                                                   class="form-control form-control-sm @error('products.'.$item->id.'.recorded_stock') is-invalid @enderror"
-                                                   value="{{ old('products.'.$item->id.'.recorded_stock', $item->physical_stock ?? '0') }}"
-                                                   min="0"
-                                                   required
-                                                   placeholder="Qty">
-                                            @error('products.'.$item->id.'.recorded_stock')
-                                                <div class="invalid-feedback d-block">
-                                                    {{ $message }}
-                                                </div>
-                                            @enderror
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="entryStockTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">No</th>
+                                <th style="width: 15%;">Kode Produk</th>
+                                <th style="width: 20%;">Barcode</th>
+                                <th>Nama Produk</th>
+                                {{-- <th style="width: 10%;">Stok Sistem (saat SO disiapkan)</th> --}}
+                                <th style="width: 15%;" class="text-center">Stok Fisik (Input)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($productsForEntry as $index => $item)
+                            <tr>
+                                <td>{{ $productsForEntry->firstItem() + $index }}</td>
+                                <td data-product-code="{{ $item->product->product_code ?? '' }}">{{ $item->product->product_code ?? 'N/A' }}</td>
+                                <td data-product-barcode="{{ $item->product->barcode ?? '' }}">{{ $item->product->barcode ?? 'N/A' }}</td>
+                                <td>{{ $item->product->name ?? 'Produk Tidak Ditemukan' }}</td>
+                                {{-- <td class="text-center">{{ $item->system_stock ?? 0 }}</td> --}}
+                                <td>
+                                    {{-- $item->id di sini adalah ID dari TempStockEntry --}}
+                                    <input type="hidden" name="products[{{ $item->id }}][temp_stock_entry_id]" value="{{ $item->id }}">
+                                    <input type="number"
+                                        name="products[{{ $item->id }}][recorded_stock]"
+                                        class="form-control form-control-sm @error('products.'.$item->id.'.recorded_stock') is-invalid @enderror"
+                                        value="{{ old('products.'.$item->id.'.recorded_stock', $item->physical_stock ?? '0') }}"
+                                        min="0"
+                                        required
+                                        placeholder="Qty">
+                                    @error('products.'.$item->id.'.recorded_stock')
+                                    <div class="invalid-feedback d-block">
+                                        {{ $message }}
+                                    </div>
+                                    @enderror
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
 
-                    @if($productsForEntry->hasPages())
-                        <div class="d-flex justify-content-center mt-3">
-                            {{ $productsForEntry->appends(request()->except('page'))->links('vendor.pagination.custom') }}
-                        </div>
-                    @endif
+                @if($productsForEntry->hasPages())
+                <div class="d-flex justify-content-between align-items-center flex-wrap mt-3">
+                    <div>
+                        <span class="text-muted">
+                            Menampilkan {{ $productsForEntry->firstItem() }} - {{ $productsForEntry->lastItem() }} dari {{ $productsForEntry->total() }} produk
+                        </span>
+                    </div>
+                    <div>
+                        {{ $productsForEntry->appends(request()->except('page'))->links('vendor.pagination.bootstrap-5') }}
+                    </div>
+                </div>
+                @endif
                 @endif
             </div>
         </div>
@@ -106,16 +113,16 @@
             <button type="submit" class="btn btn-success btn-lg">
                 <i class="bi bi-save"></i> Simpan Semua Entri Stok Fisik
             </button>
-        @endif
+            @endif
             <a href="{{ route('so_by_selected.index') }}" class="btn btn-secondary ms-2">
                 <i class="bi bi-arrow-left-circle"></i> Kembali ke Pemilihan SO
             </a>
         </div>
     </form>
     @else
-        <div class="alert alert-warning text-center">
-            SO Event tidak ditemukan atau belum dipilih. Silakan <a href="{{ route('so_by_selected.index') }}">pilih SO Event</a> terlebih dahulu.
-        </div>
+    <div class="alert alert-warning text-center">
+        SO Event tidak ditemukan atau belum dipilih. Silakan <a href="{{ route('so_by_selected.index') }}">pilih SO Event</a> terlebih dahulu.
+    </div>
     @endif
 
     {{-- Modal untuk Entri Stok Fisik Individual --}}
@@ -165,7 +172,8 @@
 <style>
     #entryStockTable tbody tr:hover {
         cursor: pointer;
-        background-color: #f5f5f5; /* Warna latar saat hover */
+        background-color: #f5f5f5;
+        /* Warna latar saat hover */
     }
 </style>
 @endpush
@@ -200,60 +208,68 @@
             }
 
             fetch(`{{ route('stock_check.find_product_for_entry') }}?barcode_or_code=${encodeURIComponent(barcodeOrCode)}&so_event_id=${soEventId}&nomor_nota=${nomorNota}`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                }
-            })
-            .then(response => {
-                // Coba parse respons sebagai JSON. Baik respons sukses (200) maupun
-                // respons 'tidak ditemukan' (404) dari findProductForEntry diharapkan mengembalikan JSON.
-                // Simpan status 'ok' dari respons untuk digunakan di blok .then berikutnya.
-                return response.json().then(data => ({ ok: response.ok, status: response.status, data }));
-            })
-            .then(({ ok, status, data }) => { // Destrukturisasi objek dari .then sebelumnya
-                if (ok && data.success && data.product) { // Kasus sukses: HTTP 200 dan success: true
-                    const product = data.product;
-                    modalTempStockEntryId.value = product.temp_stock_entry_id;
-                    modalProductName.textContent = product.name;
-                    modalProductCode.textContent = product.product_code;
-                    modalProductBarcode.textContent = product.barcode;
-                    modalSystemStock.textContent = product.system_stock;
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(response => {
+                    // Coba parse respons sebagai JSON. Baik respons sukses (200) maupun
+                    // respons 'tidak ditemukan' (404) dari findProductForEntry diharapkan mengembalikan JSON.
+                    // Simpan status 'ok' dari respons untuk digunakan di blok .then berikutnya.
+                    return response.json().then(data => ({
+                        ok: response.ok,
+                        status: response.status,
+                        data
+                    }));
+                })
+                .then(({
+                    ok,
+                    status,
+                    data
+                }) => { // Destrukturisasi objek dari .then sebelumnya
+                    if (ok && data.success && data.product) { // Kasus sukses: HTTP 200 dan success: true
+                        const product = data.product;
+                        modalTempStockEntryId.value = product.temp_stock_entry_id;
+                        modalProductName.textContent = product.name;
+                        modalProductCode.textContent = product.product_code;
+                        modalProductBarcode.textContent = product.barcode;
+                        modalSystemStock.textContent = product.system_stock;
 
-                    // Simpan nilai physical_stock yang ada (dari database/temp_entry) ke input tersembunyi
-                    // Ini adalah nilai yang sudah tersimpan SEBELUM pengguna input di modal
-                    modalCurrentPhysicalStockHidden.value = product.physical_stock !== null ? product.physical_stock : '0';
+                        // Simpan nilai physical_stock yang ada (dari database/temp_entry) ke input tersembunyi
+                        // Ini adalah nilai yang sudah tersimpan SEBELUM pengguna input di modal
+                        modalCurrentPhysicalStockHidden.value = product.physical_stock !== null ? product.physical_stock : '0';
 
-                    // Kosongkan input modal untuk entri baru, atau bisa juga diisi dengan 0
-                    modalPhysicalStockInput.value = '';
+                        // Kosongkan input modal untuk entri baru, atau bisa juga diisi dengan 0
+                        modalPhysicalStockInput.value = '';
 
-                    modalPhysicalStockInput.classList.remove('is-invalid');
-                    modalErrorMessage.textContent = '';
-                    stockEntryModal.show();
-                    modalPhysicalStockInput.placeholder = `Stok tersimpan: ${parseInt(modalCurrentPhysicalStockHidden.value)}. Input tambahan...`;
-                    setTimeout(() => modalPhysicalStockInput.focus(), 500); // Fokus setelah modal tampil
-                } else if (!ok && data && typeof data.message !== 'undefined') { // Kasus tidak ok (misal 404), tapi ada JSON message dari API
-                    Swal.fire('Tidak Ditemukan', data.message, 'error'); // Gunakan pesan dari API
+                        modalPhysicalStockInput.classList.remove('is-invalid');
+                        modalErrorMessage.textContent = '';
+                        stockEntryModal.show();
+                        modalPhysicalStockInput.placeholder = `Stok tersimpan: ${parseInt(modalCurrentPhysicalStockHidden.value)}. Input tambahan...`;
+                        setTimeout(() => modalPhysicalStockInput.focus(), 500); // Fokus setelah modal tampil
+                    } else if (!ok && data && typeof data.message !== 'undefined') { // Kasus tidak ok (misal 404), tapi ada JSON message dari API
+                        Swal.fire('Tidak Ditemukan', data.message, 'error'); // Gunakan pesan dari API
+                        if (searchInput) searchInput.focus();
+                    } else {
+                        // Kasus lain: HTTP 200 tapi success:false, atau struktur data tidak terduga
+                        Swal.fire('Info', data.message || 'Produk tidak ditemukan atau terjadi kesalahan respons.', 'info');
+                        if (searchInput) searchInput.focus();
+                    }
+                })
+                .catch(error => {
+                    // Blok ini akan menangkap error jaringan atau jika response.json() gagal (misal, server mengembalikan HTML untuk error 500)
+                    console.error('Error fetching product:', error);
+                    let userMessage = 'Terjadi kesalahan saat mencari produk.';
+                    if (error instanceof SyntaxError) { // Jika parsing JSON gagal karena respons bukan JSON
+                        userMessage = 'Respons tidak valid dari server (bukan JSON). Periksa konsol browser untuk detail.';
+                    } else if (error.message) { // Untuk error jaringan lainnya
+                        userMessage = `Gagal menghubungi server: ${error.message}. Periksa koneksi Anda.`;
+                    }
+                    Swal.fire('Error', userMessage, 'error');
                     if (searchInput) searchInput.focus();
-                } else {
-                    // Kasus lain: HTTP 200 tapi success:false, atau struktur data tidak terduga
-                    Swal.fire('Info', data.message || 'Produk tidak ditemukan atau terjadi kesalahan respons.', 'info');
-                    if (searchInput) searchInput.focus();
-                }
-            })
-            .catch(error => {
-                // Blok ini akan menangkap error jaringan atau jika response.json() gagal (misal, server mengembalikan HTML untuk error 500)
-                console.error('Error fetching product:', error);
-                let userMessage = 'Terjadi kesalahan saat mencari produk.';
-                if (error instanceof SyntaxError) { // Jika parsing JSON gagal karena respons bukan JSON
-                    userMessage = 'Respons tidak valid dari server (bukan JSON). Periksa konsol browser untuk detail.';
-                } else if (error.message) { // Untuk error jaringan lainnya
-                    userMessage = `Gagal menghubungi server: ${error.message}. Periksa koneksi Anda.`;
-                }
-                Swal.fire('Error', userMessage, 'error');
-                if (searchInput) searchInput.focus();
-            });
+                });
         }
 
         if (resetModalStockButton) {
@@ -280,41 +296,41 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         fetch(`{{ route('stock_check.reset_single_stock') }}`, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            },
-                            body: JSON.stringify({
-                                temp_stock_entry_id: tempEntryId,
-                                so_event_id: soEventId // Kirim juga so_event_id untuk validasi
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify({
+                                    temp_stock_entry_id: tempEntryId,
+                                    so_event_id: soEventId // Kirim juga so_event_id untuk validasi
+                                })
                             })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire('Direset!', 'Stok fisik item telah direset.', 'success');
-                                modalCurrentPhysicalStockHidden.value = '0'; // Karena null akan jadi '0'
-                                modalPhysicalStockInput.value = ''; // Input tambahan tetap dikosongkan
-                                modalPhysicalStockInput.placeholder = `Stok tersimpan: 0. Input tambahan...`; // Gunakan placeholder yang konsisten
-                                modalPhysicalStockInput.classList.remove('is-invalid');
-                                modalErrorMessage.textContent = '';
-                                modalPhysicalStockInput.focus();
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Direset!', 'Stok fisik item telah direset.', 'success');
+                                    modalCurrentPhysicalStockHidden.value = '0'; // Karena null akan jadi '0'
+                                    modalPhysicalStockInput.value = ''; // Input tambahan tetap dikosongkan
+                                    modalPhysicalStockInput.placeholder = `Stok tersimpan: 0. Input tambahan...`; // Gunakan placeholder yang konsisten
+                                    modalPhysicalStockInput.classList.remove('is-invalid');
+                                    modalErrorMessage.textContent = '';
+                                    modalPhysicalStockInput.focus();
 
-                                const mainTableInput = document.querySelector(`input[name="products[${tempEntryId}][recorded_stock]"]`);
-                                if (mainTableInput) {
-                                    mainTableInput.value = '0'; // Set ke '0' di tabel utama setelah reset
+                                    const mainTableInput = document.querySelector(`input[name="products[${tempEntryId}][recorded_stock]"]`);
+                                    if (mainTableInput) {
+                                        mainTableInput.value = '0'; // Set ke '0' di tabel utama setelah reset
+                                    }
+                                } else {
+                                    Swal.fire('Gagal', data.message || 'Gagal mereset stok.', 'error');
                                 }
-                            } else {
-                                Swal.fire('Gagal', data.message || 'Gagal mereset stok.', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error resetting stock:', error);
-                            Swal.fire('Error', 'Terjadi kesalahan koneksi saat mereset stok.', 'error');
-                        });
+                            })
+                            .catch(error => {
+                                console.error('Error resetting stock:', error);
+                                Swal.fire('Error', 'Terjadi kesalahan koneksi saat mereset stok.', 'error');
+                            });
                     }
                 });
             });
@@ -363,51 +379,51 @@
             modalErrorMessage.textContent = '';
 
             fetch(`{{ route('stock_check.update_single_stock') }}`, { // <-- fetch() was missing here
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    temp_stock_entry_id: tempEntryId,
-                    recorded_stock: newTotalStock, // Kirim total stok yang baru
-                    so_event_id: soEventId // Kirim juga so_event_id untuk validasi di backend
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        temp_stock_entry_id: tempEntryId,
+                        recorded_stock: newTotalStock, // Kirim total stok yang baru
+                        so_event_id: soEventId // Kirim juga so_event_id untuk validasi di backend
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    stockEntryModal.hide();
-                    Swal.fire('Sukses', 'Stok fisik berhasil diperbarui.', 'success');
-                    searchInput.value = ''; // Kosongkan input search
-                    searchInput.focus(); // Fokus kembali ke input search
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        stockEntryModal.hide();
+                        Swal.fire('Sukses', 'Stok fisik berhasil diperbarui.', 'success');
+                        searchInput.value = ''; // Kosongkan input search
+                        searchInput.focus(); // Fokus kembali ke input search
 
-                    // Update nilai di tabel utama jika item ada di halaman saat ini
-                    // dan juga perbarui nilai di input yang mungkin ada di tabel utama.
-                    const mainTableInput = document.querySelector(`input[name="products[${tempEntryId}][recorded_stock]"]`);
-                    if (mainTableInput) {
-                        mainTableInput.value = newTotalStock;
+                        // Update nilai di tabel utama jika item ada di halaman saat ini
+                        // dan juga perbarui nilai di input yang mungkin ada di tabel utama.
+                        const mainTableInput = document.querySelector(`input[name="products[${tempEntryId}][recorded_stock]"]`);
+                        if (mainTableInput) {
+                            mainTableInput.value = newTotalStock;
+                        }
+                        // Jika ingin reload halaman untuk melihat perubahan (misal jika ada paginasi dan item tidak di halaman ini)
+                        // window.location.reload();
+                    } else {
+                        modalPhysicalStockInput.classList.add('is-invalid');
+                        modalErrorMessage.textContent = data.message || 'Gagal menyimpan stok.';
+                        Swal.fire('Error', data.message || 'Gagal menyimpan stok.', 'error');
                     }
-                    // Jika ingin reload halaman untuk melihat perubahan (misal jika ada paginasi dan item tidak di halaman ini)
-                    // window.location.reload();
-                } else {
+                })
+                .catch(error => {
+                    console.error('Error saving stock:', error);
                     modalPhysicalStockInput.classList.add('is-invalid');
-                    modalErrorMessage.textContent = data.message || 'Gagal menyimpan stok.';
-                    Swal.fire('Error', data.message || 'Gagal menyimpan stok.', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error saving stock:', error);
-                modalPhysicalStockInput.classList.add('is-invalid');
-                modalErrorMessage.textContent = 'Terjadi kesalahan koneksi.';
-                Swal.fire('Error', 'Terjadi kesalahan koneksi saat menyimpan stok.', 'error');
-            });
+                    modalErrorMessage.textContent = 'Terjadi kesalahan koneksi.';
+                    Swal.fire('Error', 'Terjadi kesalahan koneksi saat menyimpan stok.', 'error');
+                });
         });
 
-         // Clear search input when modal is hidden
-        document.getElementById('stockEntryModal').addEventListener('hidden.bs.modal', function () {
+        // Clear search input when modal is hidden
+        document.getElementById('stockEntryModal').addEventListener('hidden.bs.modal', function() {
             if (searchInput) {
                 searchInput.value = '';
                 // searchInput.focus(); // Opsional: langsung fokus kembali

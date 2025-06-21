@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Manajemen Database')
+@section('title', 'Manajemen Backup Database')
 
 @section('content')
 <div class="container-fluid">
     <div class="text-center pt-2 pb-2 mb-3 border-bottom">
-        <h1 class="h2 d-inline-block mb-0 me-2 align-middle">Manajemen Database</h1>
+        <h1 class="h2 d-inline-block mb-0 me-2 align-middle">Backup Database</h1>
     </div>
 
     @include('layouts.flash-messages')
@@ -14,238 +14,87 @@
         <div class="col-md-12 mb-4">
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Daftar Tabel Database</h5>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createTableModal">
-                        <i class="bi bi-plus-circle"></i> Buat Tabel Baru
-                    </button>
+                    <h5 class="card-title mb-0">Daftar File Backup Database</h5>
+                    <div>
+                        <a href="{{ route('admin.database.backup.create') }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i> Backup Sekarang
+                        </a>
+                        <a href="{{ route('admin.database.migrate') }}" class="btn btn-sm btn-warning ms-2">
+                            <i class="bi bi-lightning-charge"></i> Jalankan Migration
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    @if(!empty($tables))
-                    <div class="accordion" id="tablesAccordion">
-                        @foreach($tables as $table)
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading{{ $loop->index }}">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                    data-bs-target="#collapse{{ $loop->index }}" aria-expanded="false"
-                                    aria-controls="collapse{{ $loop->index }}">
-                                    <code class="me-2">{{ $table }}</code>
-                                    <span class="badge bg-secondary ms-2">{{ $tableDetails[$table]['rowCount'] }} baris</span>
-                                </button>
-                            </h2>
-                            <div id="collapse{{ $loop->index }}" class="accordion-collapse collapse"
-                                aria-labelledby="heading{{ $loop->index }}" data-bs-parent="#tablesAccordion">
-                                <div class="accordion-body">
-                                    <div class="mb-4">
-                                        <h6>Struktur Tabel:</h6>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-bordered">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Kolom</th>
-                                                        <th>Tipe</th>
-                                                        <th>Nullable</th>
-                                                        <th>Key</th>
-                                                        <th>Default</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach($tableDetails[$table]['columnsDetails'] as $column)
-                                                    <tr>
-                                                        <td><code>{{ $column['name'] }}</code></td>
-                                                        <td>{{ $column['type'] }}</td>
-                                                        <td>{{ $column['nullable'] ? 'Ya' : 'Tidak' }}</td>
-                                                        <td>{{ $column['key'] ?: '-' }}</td>
-                                                        <td>{{ $column['default'] ?: 'NULL' }}</td>
-                                                    </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <h6>Contoh Data (5 baris teratas):</h6>
-                                        @if(!empty($tableDetails[$table]['sampleData']))
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-striped">
-                                                <thead>
-                                                    <tr>
-                                                        @foreach($tableDetails[$table]['columns'] as $column)
-                                                        <th>{{ $column }}</th>
-                                                        @endforeach
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach($tableDetails[$table]['sampleData'] as $row)
-                                                    <tr>
-                                                        @foreach($tableDetails[$table]['columns'] as $column)
-                                                        <td>
-                                                            @if(is_array($row[$column] ?? null) || is_object($row[$column] ?? null))
-                                                            {{ json_encode($row[$column]) }}
-                                                            @else
-                                                            {{ $row[$column] ?? 'NULL' }}
-                                                            @endif
-                                                        </td>
-                                                        @endforeach
-                                                    </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        @else
-                                        <p class="text-muted">Tidak ada data atau gagal mengambil contoh data.</p>
-                                        @endif
-                                    </div>
-
-                                    <div class="d-flex justify-content-between">
-                                        <a href="{{ route('admin.database.table.data', $table) }}"
-                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i> Lihat Semua Data
-                                        </a>
-                                        <form action="{{ route('admin.database.table.destroy', $table) }}" method="POST"
-                                            onsubmit="return confirm('Hapus tabel {{ $table }}? Data akan hilang permanen!');">
+                    @if(!empty($backups) && count($backups) > 0)
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nama File</th>
+                                    <th>Ukuran</th>
+                                    <th>Tanggal Backup</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($backups as $i => $backup)
+                                <tr>
+                                    <td>{{ $i+1 }}</td>
+                                    <td><code>{{ $backup['name'] }}</code></td>
+                                    <td>{{ $backup['size'] }}</td>
+                                    <td>{{ $backup['date'] }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('admin.database.backup.download', $backup['name']) }}" class="btn btn-sm btn-success me-1"><i class="bi bi-download"></i> Download</a>
+                                        <form action="{{ route('admin.database.backup.restore', $backup['name']) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Restore backup ini? Data saat ini akan diganti!');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-warning me-1"><i class="bi bi-arrow-clockwise"></i> Restore</button>
+                                        </form>
+                                        <form action="{{ route('admin.database.backup.delete', $backup['name']) }}" method="POST" class="d-inline-block delete-backup-form">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-trash"></i> Hapus Tabel
-                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger btn-delete-backup"><i class="bi bi-trash"></i> Hapus</button>
                                         </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                     @else
-                    <p class="text-muted">Tidak ada tabel yang ditemukan.</p>
+                    <p class="text-muted">Belum ada file backup database.</p>
                     @endif
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-{{-- Kolom Buat Tabel Baru --}}
-<div class="col-md-6 mb-4">
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h5 class="card-title mb-0">Buat Tabel Baru</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ route('admin.database.table.store') }}" method="POST">
-                @csrf
-                <div class="mb-3">
-                    <label for="table_name" class="form-label">Nama Tabel <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('table_name') is-invalid @enderror" id="table_name" name="table_name" value="{{ old('table_name') }}" required pattern="[a-zA-Z0-9_]+" title="Hanya huruf, angka, dan underscore.">
-                    @error('table_name')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <hr>
-                <h6>Definisi Kolom <span class="text-danger">*</span></h6>
-                <div id="columns-container">
-                    {{-- Kolom awal --}}
-                    <div class="row column-definition mb-2 gx-2">
-                        <div class="col">
-                            <input type="text" name="columns[0][name]" class="form-control form-control-sm" placeholder="Nama Kolom (cth: user_name)" required pattern="[a-zA-Z0-9_]+">
-                        </div>
-                        <div class="col">
-                            <select name="columns[0][type]" class="form-select form-select-sm" required>
-                                <option value="id">ID (Primary, Auto Increment)</option>
-                                <option value="string">String (VARCHAR)</option>
-                                <option value="integer">Integer</option>
-                                <option value="text">Text</option>
-                                <option value="date">Date</option>
-                                <option value="boolean">Boolean</option>
-                                <option value="timestamps">Timestamps (created_at, updated_at)</option>
-                            </select>
-                        </div>
-                        <div class="col-auto">
-                            <button type="button" class="btn btn-sm btn-danger remove-column-btn" disabled><i class="bi bi-x-circle"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="button" id="add-column-btn" class="btn btn-sm btn-outline-secondary mt-2 mb-3">
-                    <i class="bi bi-plus-circle"></i> Tambah Kolom
-                </button>
-
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-plus-square"></i> Buat Tabel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-</div>
-</div>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const columnsContainer = document.getElementById('columns-container');
-        const addColumnBtn = document.getElementById('add-column-btn');
-        @php
-        $oldColumnsValue = old('columns');
-        $initialColumnIndex = 1; // Default value
-        // Ensure old('columns') is an array and not empty before counting
-        if (is_array($oldColumnsValue) && count($oldColumnsValue) > 0) {
-            $initialColumnIndex = count($oldColumnsValue);
-        }
-        @endphp
-        let columnIndex = {
-            {
-                $initialColumnIndex
-            }
-        };
-
-        function updateRemoveButtons() {
-            const removeButtons = columnsContainer.querySelectorAll('.remove-column-btn');
-            removeButtons.forEach((btn, index) => {
-                btn.disabled = removeButtons.length <= 1; // Nonaktifkan jika hanya ada satu baris
+        document.querySelectorAll('.btn-delete-backup').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = btn.closest('form');
+                Swal.fire({
+                    title: 'Hapus file backup ini?',
+                    text: 'File backup akan dihapus permanen!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
             });
-        }
-
-        addColumnBtn.addEventListener('click', function() {
-            const newColumnHtml = `
-            <div class="row column-definition mb-2 gx-2">
-                <div class="col">
-                    <input type="text" name="columns[${columnIndex}][name]" class="form-control form-control-sm" placeholder="Nama Kolom" required pattern="[a-zA-Z0-9_]+">
-                </div>
-                <div class="col">
-                    <select name="columns[${columnIndex}][type]" class="form-select form-select-sm" required>
-                        <option value="string">String (VARCHAR)</option>
-                        <option value="integer">Integer</option>
-                        <option value="text">Text</option>
-                        <option value="date">Date</option>
-                        <option value="boolean">Boolean</option>
-                        <option value="id">ID (Primary, Auto Increment)</option>
-                        <option value="timestamps">Timestamps (created_at, updated_at)</option>
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <button type="button" class="btn btn-sm btn-danger remove-column-btn"><i class="bi bi-x-circle"></i></button>
-                </div>
-            </div>
-        `;
-            columnsContainer.insertAdjacentHTML('beforeend', newColumnHtml);
-            columnIndex++;
-            updateRemoveButtons();
         });
-
-        columnsContainer.addEventListener('click', function(event) {
-            if (event.target.closest('.remove-column-btn')) {
-                event.target.closest('.column-definition').remove();
-                updateRemoveButtons();
-            }
-        });
-
-        // Panggil saat load untuk memastikan status tombol hapus benar
-        updateRemoveButtons();
     });
 </script>
 @endpush

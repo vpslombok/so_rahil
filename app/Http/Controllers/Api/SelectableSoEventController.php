@@ -405,6 +405,12 @@ class SelectableSoEventController extends Controller
         \DB::beginTransaction();
         try {
             foreach ($tempEntries as $tempEntry) {
+                // Ambil system_stock terbaru dari user_product_stock
+                $systemStock = \App\Models\UserProductStock::where('user_id', $user->id)
+                    ->where('product_id', $tempEntry->product_id)
+                    ->value('stock') ?? 0;
+                $physicalStock = $tempEntry->physical_stock;
+                $difference = $physicalStock - $systemStock;
                 \App\Models\StockAudit::create([
                     'user_id' => $tempEntry->user_id,
                     'stock_opname_event_id' => $tempEntry->stock_opname_event_id,
@@ -413,9 +419,9 @@ class SelectableSoEventController extends Controller
                     'product_name' => $tempEntry->product_name,
                     'barcode' => $tempEntry->barcode,
                     'product_code' => $tempEntry->product_code,
-                    'system_stock' => $tempEntry->system_stock,
-                    'physical_stock' => $tempEntry->physical_stock,
-                    'difference' => $tempEntry->difference,
+                    'system_stock' => $systemStock,
+                    'physical_stock' => $physicalStock,
+                    'difference' => $difference,
                     'audit_timestamp' => now(),
                     'note' => $note,
                 ]);

@@ -10,6 +10,18 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
+if (!function_exists('formatBytes')) {
+    function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+        return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+}
+
 class DatabaseUtilityController extends Controller
 {
     /**
@@ -17,35 +29,26 @@ class DatabaseUtilityController extends Controller
      */
     public function index(): View
     {
-        $tables = [];
-        $tableDetails = [];
-        
-        try {
-            // Cara mendapatkan daftar tabel di Laravel 11
-            $tables = $this->getTableNames();
-            
-            // Filter out Laravel internal tables
-            $excludedTables = ['migrations', 'failed_jobs', 'password_reset_tokens', 'personal_access_tokens', 'sessions'];
-            $tables = array_filter($tables, function ($table) use ($excludedTables) {
-                return !in_array($table, $excludedTables);
+        $backups = [];
+        $backupPath = storage_path('app/backup');
+        if (is_dir($backupPath)) {
+            $files = array_filter(scandir($backupPath), function ($file) use ($backupPath) {
+                return is_file($backupPath . DIRECTORY_SEPARATOR . $file);
             });
-            
-            sort($tables);
-
-            // Get details for each table
-            foreach ($tables as $table) {
-                $tableDetails[$table] = [
-                    'columns' => Schema::getColumnListing($table),
-                    'columnsDetails' => $this->getTableColumnsDetails($table),
-                    'rowCount' => DB::table($table)->count(),
-                    'sampleData' => $this->getTableSampleData($table),
+            foreach ($files as $file) {
+                $filePath = $backupPath . DIRECTORY_SEPARATOR . $file;
+                $backups[] = [
+                    'name' => $file,
+                    'size' => formatBytes(filesize($filePath)),
+                    'date' => date('Y-m-d H:i:s', filemtime($filePath)),
                 ];
             }
-        } catch (\Exception $e) {
-            session()->flash('error', 'Gagal mengambil data database: ' . $e->getMessage());
+            // Urutkan terbaru di atas
+            usort($backups, function ($a, $b) {
+                return strtotime($b['date']) <=> strtotime($a['date']);
+            });
         }
-
-        return view('admin.database_utility.index', compact('tables', 'tableDetails'));
+        return view('admin.database_utility.index', compact('backups'));
     }
 
     /**
@@ -60,10 +63,9 @@ class DatabaseUtilityController extends Controller
                 $key = 'Tables_in_' . DB::connection()->getDatabaseName();
                 return array_column($tables, $key);
             }
-            
+
             // Untuk database lain (SQLite, PostgreSQL, SQL Server)
             return DB::connection()->getSchemaBuilder()->getAllTables();
-            
         } catch (\Exception $e) {
             // Fallback jika semua metode gagal
             return [];
@@ -79,7 +81,7 @@ class DatabaseUtilityController extends Controller
         try {
             if (DB::connection()->getDriverName() === 'mysql') {
                 $dbColumns = DB::select("SHOW COLUMNS FROM `{$tableName}`");
-                
+
                 foreach ($dbColumns as $column) {
                     $columns[] = [
                         'name' => $column->Field,
@@ -107,7 +109,7 @@ class DatabaseUtilityController extends Controller
                 ];
             }
         }
-        
+
         return $columns;
     }
 
@@ -179,7 +181,7 @@ class DatabaseUtilityController extends Controller
                     }
                 }
             });
-            
+
             DB::commit();
             return back()->with('success', "Tabel '{$tableName}' berhasil dibuat.");
         } catch (\Exception $e) {
@@ -205,6 +207,76 @@ class DatabaseUtilityController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', "Gagal menghapus tabel '{$tableName}': " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Backup database ke storage/app/backup
+     */
+    public function createBackup()
+    {
+        $backupPath = storage_path('app/backup');
+        if (!is_dir($backupPath)) {
+            mkdir($backupPath, 0755, true);
+        }
+        $filename = 'backup_' . date('Ymd_His') . '.sql';
+        $filePath = $backupPath . DIRECTORY_SEPARATOR . $filename;
+
+        $db = config('database.connections.mysql.database');
+        $user = config('database.connections.mysql.username');
+        $pass = config('database.connections.mysql.password');
+        $host = config('database.connections.mysql.host');
+        $port = config('database.connections.mysql.port', 3306);
+
+        $command = "mysqldump --user={$user} --password={$pass} --host={$host} --port={$port} {$db} > \"{$filePath}\"";
+        $result = null;
+        $output = null;
+        exec($command, $output, $result);
+
+        if ($result === 0) {
+            return redirect()->route('admin.database.utility')->with('success', 'Backup database berhasil: ' . $filename);
+        } else {
+            return redirect()->route('admin.database.utility')->with('error', 'Backup database gagal.');
+        }
+    }
+
+    /**
+     * Hapus file backup database
+     */
+    public function deleteBackup($filename)
+    {
+        $backupPath = storage_path('app/backup/' . $filename);
+        if (file_exists($backupPath)) {
+            unlink($backupPath);
+            return redirect()->route('admin.database.utility')->with('success', 'File backup berhasil dihapus.');
+        } else {
+            return redirect()->route('admin.database.utility')->with('error', 'File backup tidak ditemukan.');
+        }
+    }
+
+    /**
+     * Download file backup database
+     */
+    public function downloadBackup($filename)
+    {
+        $backupPath = storage_path('app/backup/' . $filename);
+        if (file_exists($backupPath)) {
+            return response()->download($backupPath);
+        } else {
+            return redirect()->route('admin.database.utility')->with('error', 'File backup tidak ditemukan.');
+        }
+    }
+
+    /**
+     * Jalankan migrate artisan command dari halaman admin
+     */
+    public function runMigration()
+    {
+        try {
+            \Artisan::call('migrate', ['--force' => true]);
+            return redirect()->route('admin.database.utility')->with('success', 'Migrasi database berhasil dijalankan.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.database.utility')->with('error', 'Gagal menjalankan migrasi: ' . $e->getMessage());
         }
     }
 }

@@ -95,7 +95,7 @@
                                 <div class="d-flex">
                                     <button type="button" class="btn btn-sm btn-icon btn-warning me-2 edit-user-btn"
                                         data-bs-toggle="modal" data-bs-target="#editUserModal"
-                                        data-id="{{ $user->id }}" 
+                                        data-id="{{ $user->id }}"
                                         data-name="{{ $user->name }}"
                                         data-username="{{ $user->username }}"
                                         data-role="{{ $user->role }}"
@@ -117,15 +117,15 @@
                     </tbody>
                 </table>
             </div>
-            
+
             {{-- Pagination --}}
             @if($users->hasPages())
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div class="text-muted">
-                    Menampilkan {{ $users->firstItem() }} sampai {{ $users->lastItem() }} dari {{ $users->total() }} entri
+            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
+                <div class="text-muted mb-2 mb-md-0">
+                    Menampilkan {{ $users->firstItem() }} - {{ $users->lastItem() }} dari {{ $users->total() }} user
                 </div>
                 <nav>
-                    {{ $users->appends(request()->query())->links('pagination::bootstrap-5') }}
+                    {{ $users->appends(request()->query())->links('vendor.pagination.bootstrap-5') }}
                 </nav>
             </div>
             @endif
@@ -148,19 +148,23 @@
         justify-content: center;
         vertical-align: middle;
     }
+
     .symbol.symbol-circle {
         border-radius: 50%;
     }
+
     .symbol-40 {
         width: 40px;
         height: 40px;
     }
+
     .symbol-label {
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
     }
+
     .btn-icon {
         width: 32px;
         height: 32px;
@@ -168,6 +172,7 @@
         align-items: center;
         justify-content: center;
     }
+
     .table th {
         font-weight: 600;
         text-transform: uppercase;
@@ -187,9 +192,14 @@
             language: {
                 url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
             },
-            columnDefs: [
-                { orderable: false, targets: [0, 4] },
-                { searchable: false, targets: [0, 3, 4] }
+            columnDefs: [{
+                    orderable: false,
+                    targets: [0, 4]
+                },
+                {
+                    searchable: false,
+                    targets: [0, 3, 4]
+                }
             ],
             initComplete: function() {
                 $('.dataTables_filter input').addClass('form-control form-control-sm');
@@ -205,11 +215,11 @@
             var username = button.data('username');
             var name = button.data('name'); // Ambil data nama
             var role = button.data('role');
-            
+
             modal.find('.modal-title').html(
                 `<i class="fas fa-user-edit me-2"></i> Edit User: ${username}`
             );
-            
+
             // Only populate fields if not opened due to validation error (to preserve old() values from Blade)
             // The modal 'users.modals.edit' already uses old() for field values.
             // We just need to ensure that if it's a fresh open, we populate.
@@ -222,7 +232,7 @@
                 modal.find('#edit_password_confirmation').val('');
             }
             modal.find('#edit_user_id_input').val(userId); // Set hidden user ID for the form
-            
+
             // Set form action correctly using Laravel's route helper
             var actionUrl = "{{ route('admin.users.update', ['user' => ':userId']) }}";
             actionUrl = actionUrl.replace(':userId', userId);
@@ -233,7 +243,7 @@
         $('.delete-form').on('submit', function(e) {
             e.preventDefault();
             var form = this;
-            
+
             Swal.fire({
                 title: 'Konfirmasi Hapus User',
                 text: "Anda yakin ingin menghapus user ini? Tindakan ini tidak dapat dibatalkan!",
@@ -251,32 +261,22 @@
         });
 
         // Show modals if there are validation errors
-        @if ($errors->createUser->any())
-            $('#createUserModal').modal('show');
+        @if($errors->createUser->any())
+        $('#createUserModal').modal('show');
         @endif
-        
-        @if (session('open_edit_modal') && $errors->editUser->any())
-            var userIdToEdit = "{{ session('open_edit_modal') }}";
-            var failedEditUsername = "{{ session('failed_edit_username', 'User') }}"; // Default if not set
-            // var failedEditName = "{{ old('name', '') }}"; // Anda bisa mengambil old name jika diperlukan
-            var modal = $('#editUserModal');
 
-            // Set modal title
-            modal.find('.modal-title').html(
-                `<i class="fas fa-user-edit me-2"></i> Edit User: ${failedEditUsername}`
-            );
-
-            // The form fields (name, username, role, password) will be populated by old() values 
-            // from Blade in 'users.modals.edit.blade.php'.
-            // We just need to ensure the hidden user_id and form action are correct.
-            modal.find('#edit_user_id_input').val(userIdToEdit);
-
-            // Set form action correctly
-            var actionUrl = "{{ route('admin.users.update', ['user' => ':userId']) }}";
-            actionUrl = actionUrl.replace(':userId', userIdToEdit);
-            modal.find('form#editUserForm').attr('action', actionUrl);
-            
-            modal.modal('show');
+        @if(session('open_edit_modal') && $errors->editUser->any())
+        var userIdToEdit = "{{ session('open_edit_modal') }}";
+        var failedEditUsername = "{{ session('failed_edit_username', 'User') }}";
+        var modal = $('#editUserModal');
+        modal.find('.modal-title').html(
+            `<i class="fas fa-user-edit me-2"></i> Edit User: ${failedEditUsername}`
+        );
+        modal.find('#edit_user_id_input').val(userIdToEdit);
+        var actionUrl = "{{ route('admin.users.update', ['user' => ':userId']) }}";
+        actionUrl = actionUrl.replace(':userId', userIdToEdit);
+        modal.find('form#editUserForm').attr('action', actionUrl);
+        modal.modal('show');
         @endif
     });
 </script>

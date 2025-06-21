@@ -63,78 +63,85 @@
 
     {{-- Daftar Produk jika ada filter aktif (Event atau Rak) dan ada produk untuk ditampilkan --}}
     @if(isset($selectedEventId) && isset($productsToDisplay) && $productsToDisplay->count() > 0)
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">
-                    @if(isset($currentEvent)) Daftar Produk untuk SO: {{ $currentEvent->name }} @else
-                        Daftar Produk
-                    @endif
-                </h6>
-            </div>
-            <div class="card-body">
-                @if(session('info_message'))
-                <div class="alert alert-info">{{ session('info_message') }}</div>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                @if(isset($currentEvent)) Daftar Produk untuk SO: {{ $currentEvent->name }} @else
+                Daftar Produk
                 @endif
-                <div class="table-responsive">
-                    <table class="table table-bordered" id="soProductTable">
-                        <thead>
-                            <tr>
-                                <th style="width: 5%;">No</th>
-                                <th style="width: 15%;">Kode Produk</th>
-                                <th style="width: 20%;">Barcode</th>
-                                <th>Nama Produk</th>
-                                <th style="width: 15%;">Rak</th> {{-- Tambah kolom Rak --}}
-                                {{-- Kolom Stok Fisik dihilangkan --}}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($productsToDisplay as $index => $item)
-                                @php
-                                    // $item->product akan ada jika dari SoSelectedProduct atau jika dibungkus oleh controller
-                                    // Jika $productsToDisplay adalah koleksi Product langsung (saat filter by rack only), maka $item adalah Product itu sendiri.
-                                    // Controller sudah dimodifikasi untuk membungkus Product agar selalu ada $item->product
-                                    $product = $item->product;
-                                @endphp
-                                <tr>
-                                    <td>{{ $productsToDisplay->firstItem() + $index }}</td>
-                                    <td>
-                                        {{ $product->product_code ?? 'N/A' }}
-                                    </td>
-                                    <td>
-                                        {{ $product->barcode ?? 'N/A' }}
-                                    </td>
-                                    <td>{{ $product->name ?? 'Produk Tidak Ditemukan' }}</td>
-                                    <td>{{ $product->rack->name ?? '-' }}</td> {{-- Tampilkan nama rak --}}
-                                    {{-- Data Stok Fisik dihilangkan --}}
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                @if($productsToDisplay->hasPages())
-                    <div class="d-flex justify-content-center mt-3">
-                        {{ $productsToDisplay->appends(['event_id' => $selectedEventId])->links('vendor.pagination.custom') }}
-                    </div>
-                @endif
-            </div>
+            </h6>
         </div>
+        <div class="card-body">
+            @if(session('info_message'))
+            <div class="alert alert-info">{{ session('info_message') }}</div>
+            @endif
+            <div class="table-responsive">
+                <table class="table table-bordered" id="soProductTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">No</th>
+                            <th style="width: 15%;">Kode Produk</th>
+                            <th style="width: 20%;">Barcode</th>
+                            <th>Nama Produk</th>
+                            <th style="width: 15%;">Rak</th> {{-- Tambah kolom Rak --}}
+                            {{-- Kolom Stok Fisik dihilangkan --}}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($productsToDisplay as $index => $item)
+                        @php
+                        // $item->product akan ada jika dari SoSelectedProduct atau jika dibungkus oleh controller
+                        // Jika $productsToDisplay adalah koleksi Product langsung (saat filter by rack only), maka $item adalah Product itu sendiri.
+                        // Controller sudah dimodifikasi untuk membungkus Product agar selalu ada $item->product
+                        $product = $item->product;
+                        @endphp
+                        <tr>
+                            <td>{{ $productsToDisplay->firstItem() + $index }}</td>
+                            <td>
+                                {{ $product->product_code ?? 'N/A' }}
+                            </td>
+                            <td>
+                                {{ $product->barcode ?? 'N/A' }}
+                            </td>
+                            <td>{{ $product->name ?? 'Produk Tidak Ditemukan' }}</td>
+                            <td>{{ $product->rack->name ?? '-' }}</td> {{-- Tampilkan nama rak --}}
+                            {{-- Data Stok Fisik dihilangkan --}}
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if($productsToDisplay->hasPages())
+            <div class="d-flex justify-content-between align-items-center flex-wrap mt-3">
+                <div>
+                    <span class="text-muted">
+                        Menampilkan {{ $productsToDisplay->firstItem() }} - {{ $productsToDisplay->lastItem() }} dari {{ $productsToDisplay->total() }} produk
+                    </span>
+                </div>
+                <div>
+                    {{ $productsToDisplay->appends(['event_id' => $selectedEventId])->links('vendor.pagination.bootstrap-5') }}
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
     {{-- Pesan jika ada filter aktif tapi tidak ada hasil --}}
     @elseif(isset($selectedEventId) && isset($productsToDisplay) && $productsToDisplay->isEmpty() && !session('info_message'))
-        <p class="text-center mt-3">Tidak ada produk yang cocok dengan filter yang Anda pilih.</p>
+    <p class="text-center mt-3">Tidak ada produk yang cocok dengan filter yang Anda pilih.</p>
     @elseif(isset($activeSoEvents) && $activeSoEvents->isNotEmpty() && !isset($selectedEventId) && !isset($selectedRackId))
-        <p class="text-center mt-3">Silakan pilih SO Event atau Rak di atas untuk menampilkan produk.</p>
+    <p class="text-center mt-3">Silakan pilih SO Event atau Rak di atas untuk menampilkan produk.</p>
     @endif
-@endsection
+    @endsection
 
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('event_id')?.addEventListener('change', function() {
-            this.form.submit();
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('event_id')?.addEventListener('change', function() {
+                this.form.submit();
+            });
+            // Remove rack_id listener as the element is removed
+            // const prepareEntryForm related logic is also removed as the conditional rendering for it has changed.
+            // The form #prepareEntryForm will only show if $selectedEventId is present, so event_id is guaranteed.
         });
-        // Remove rack_id listener as the element is removed
-        // const prepareEntryForm related logic is also removed as the conditional rendering for it has changed.
-        // The form #prepareEntryForm will only show if $selectedEventId is present, so event_id is guaranteed.
-    });
-</script>
-@endpush
+    </script>
+    @endpush

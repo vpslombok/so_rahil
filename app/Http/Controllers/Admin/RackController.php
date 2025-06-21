@@ -10,8 +10,8 @@ class RackController extends Controller
 {
     public function index()
     {
-        // Eager load relasi 'products' untuk setiap rak
-        $racks = Rack::with('products')->latest()->paginate(10);
+        // Eager load relasi 'products' untuk setiap rak dan urutkan berdasarkan nama (abjad)
+        $racks = Rack::with('products')->orderBy('name')->paginate(10);
         return view('admin.racks.index', compact('racks'));
     }
 

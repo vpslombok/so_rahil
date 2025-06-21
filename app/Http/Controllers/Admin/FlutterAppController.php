@@ -12,8 +12,6 @@ use Illuminate\Validation\Rule;
 
 class FlutterAppController extends Controller
 {
-    protected $apkStoragePath = 'flutter_apks';
-
     /**
      * Display the Flutter app management page.
      *
@@ -26,7 +24,7 @@ class FlutterAppController extends Controller
     }
 
     /**
-     * Handle the upload of a new Flutter APK.
+     * Handle the upload of a new Flutter APK (now via Google Drive link).
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
@@ -34,54 +32,66 @@ class FlutterAppController extends Controller
     public function upload(Request $request)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'apk_file' => 'required|file|mimetypes:application/vnd.android.package-archive,application/octet-stream,application/zip|max:102400',
+            'gdrive_link' => 'required|url|max:500',
             'version_name' => [
                 'required',
                 'string',
                 'max:25',
-                Rule::unique('flutter_app_versions', 'version_name') // Jika tidak menggunakan SoftDeletes, hapus withoutTrashed()
+                Rule::unique('flutter_app_versions', 'version_name')
             ],
             'release_notes' => 'nullable|string|max:5000',
         ]);
 
+        \Log::info('FlutterAppManager: upload attempt', [
+            'user_id' => optional($request->user())->id,
+            'version_name' => $request->version_name,
+            'gdrive_link' => $request->gdrive_link,
+            'ip' => $request->ip(),
+        ]);
+
         if ($validator->fails()) {
+            \Log::warning('FlutterAppManager: upload validation failed', [
+                'user_id' => optional($request->user())->id,
+                'errors' => $validator->errors()->all(),
+                'ip' => $request->ip(),
+            ]);
             return redirect()->route('admin.flutter_app.manager')
-                ->withErrors($validator, 'uploadForm') // Menggunakan error bag 'uploadForm'
+                ->withErrors($validator, 'uploadForm')
                 ->withInput()
-                ->with('open_upload_modal', true); // Flag untuk membuka modal
+                ->with('open_upload_modal', true);
         }
 
         $validatedData = $validator->validated();
 
         try {
-            $file = $validatedData['apk_file']; // Ambil dari data yang sudah divalidasi
-            $originalFileName = $file->getClientOriginalName();
-            $fileName = Str::slug($validatedData['version_name']) . '_' . time() . '.' . $file->getClientOriginalExtension();
-
-            $filePath = $file->storeAs($this->apkStoragePath, $fileName, 'local');
-
-            if (!$filePath) {
-                throw new \Exception("Gagal menyimpan file APK.");
-            }
             FlutterAppVersion::create([
                 'version_name' => $validatedData['version_name'],
-                'file_name' => $originalFileName,
-                'file_path' => $filePath,
-                'file_size' => $file->getSize(),
+                'gdrive_link' => $validatedData['gdrive_link'],
                 'release_notes' => $validatedData['release_notes'],
                 'is_active' => false,
+                'file_name' => $validatedData['gdrive_link'], // file_name diisi link Google Drive
+                'file_path' => $validatedData['gdrive_link'], // file_path diisi link Google Drive
             ]);
 
-            Log::info('APK uploaded: ' . $validatedData['version_name'] . ' at path: ' . $filePath);
+            \Log::info('FlutterAppManager: version created', [
+                'user_id' => optional($request->user())->id,
+                'version_name' => $validatedData['version_name'],
+                'gdrive_link' => $validatedData['gdrive_link'],
+                'ip' => $request->ip(),
+            ]);
 
             return redirect()->route('admin.flutter_app.manager')
-                ->with('success_message_flutter_app', 'Aplikasi Flutter versi ' . $validatedData['version_name'] . ' berhasil diunggah.');
+                ->with('success_message_flutter_app', 'Versi aplikasi Flutter ' . $validatedData['version_name'] . ' berhasil ditambahkan.');
         } catch (\Exception $e) {
-            Log::error('APK upload error: ' . $e->getMessage());
+            \Log::error('FlutterAppManager: upload exception', [
+                'user_id' => optional($request->user())->id,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return redirect()->route('admin.flutter_app.manager')
-                ->with('error_message_flutter_app', 'Gagal mengunggah aplikasi: ' . $e->getMessage())
-                ->with('open_upload_modal', true) // Buka modal juga jika ada exception lain
-                ->withInput(); // Bawa input lama kembali
+                ->with('error_message_flutter_app', 'Gagal menambah versi aplikasi: ' . $e->getMessage())
+                ->with('open_upload_modal', true)
+                ->withInput();
         }
     }
 
@@ -95,24 +105,35 @@ class FlutterAppController extends Controller
     {
         $request->validate(['version_id' => 'required|exists:flutter_app_versions,id']);
 
+        \Log::info('FlutterAppManager: delete attempt', [
+            'user_id' => optional($request->user())->id,
+            'version_id' => $request->version_id,
+            'ip' => $request->ip(),
+        ]);
+
         try {
             $version = FlutterAppVersion::findOrFail($request->input('version_id'));
-
-            if (Storage::disk('local')->exists($version->file_path)) {
-                Storage::disk('local')->delete($version->file_path);
-            }
-
             $versionName = $version->version_name;
             $version->delete();
 
-            Log::info('APK deleted: ' . $versionName);
+            \Log::info('FlutterAppManager: version deleted', [
+                'user_id' => optional($request->user())->id,
+                'version_id' => $request->version_id,
+                'version_name' => $versionName,
+                'ip' => $request->ip(),
+            ]);
 
             return redirect()->route('admin.flutter_app.manager')
-                ->with('success_message_flutter_app', 'Aplikasi versi ' . $versionName . ' berhasil dihapus.');
+                ->with('success_message_flutter_app', 'Versi aplikasi ' . $versionName . ' berhasil dihapus.');
         } catch (\Exception $e) {
-            Log::error('APK delete error: ' . $e->getMessage());
+            \Log::error('FlutterAppManager: delete exception', [
+                'user_id' => optional($request->user())->id,
+                'version_id' => $request->version_id,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return redirect()->route('admin.flutter_app.manager')
-                ->with('error_message_flutter_app', 'Gagal menghapus aplikasi: ' . $e->getMessage());
+                ->with('error_message_flutter_app', 'Gagal menghapus versi aplikasi: ' . $e->getMessage());
         }
     }
 
@@ -122,25 +143,6 @@ class FlutterAppController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\RedirectResponse
      */
-    public function download(Request $request)
-    {
-        $request->validate(['version_id' => 'required|exists:flutter_app_versions,id']);
-
-        try {
-            $version = FlutterAppVersion::findOrFail($request->input('version_id'));
-
-            if (Storage::disk('local')->exists($version->file_path)) {
-                return Storage::disk('local')->download($version->file_path, $version->file_name);
-            }
-
-            return redirect()->route('admin.flutter_app.manager')
-                ->with('error_message_flutter_app', 'File aplikasi untuk versi ' . $version->version_name . ' tidak ditemukan di storage.');
-        } catch (\Exception $e) {
-            Log::error('APK download error: ' . $e->getMessage());
-            return redirect()->route('admin.flutter_app.manager')
-                ->with('error_message_flutter_app', 'Gagal mengunduh aplikasi: ' . $e->getMessage());
-        }
-    }
 
     /**
      * API endpoint to get available versions.
@@ -168,6 +170,12 @@ class FlutterAppController extends Controller
     {
         $request->validate(['version_id' => 'required|exists:flutter_app_versions,id']);
 
+        \Log::info('FlutterAppManager: set active attempt', [
+            'user_id' => optional($request->user())->id,
+            'version_id' => $request->version_id,
+            'ip' => $request->ip(),
+        ]);
+
         try {
             FlutterAppVersion::where('is_active', true)->update(['is_active' => false]);
 
@@ -175,10 +183,22 @@ class FlutterAppController extends Controller
             $versionToActivate->is_active = true;
             $versionToActivate->save();
 
+            \Log::info('FlutterAppManager: set active success', [
+                'user_id' => optional($request->user())->id,
+                'version_id' => $request->version_id,
+                'version_name' => $versionToActivate->version_name,
+                'ip' => $request->ip(),
+            ]);
+
             return redirect()->route('admin.flutter_app.manager')
                 ->with('success_message_flutter_app', 'Versi ' . $versionToActivate->version_name . ' berhasil diaktifkan.');
         } catch (\Exception $e) {
-            Log::error('Set active version error: ' . $e->getMessage());
+            \Log::error('FlutterAppManager: set active exception', [
+                'user_id' => optional($request->user())->id,
+                'version_id' => $request->version_id,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return redirect()->route('admin.flutter_app.manager')
                 ->with('error_message_flutter_app', 'Gagal mengaktifkan versi: ' . $e->getMessage());
         }
@@ -194,15 +214,33 @@ class FlutterAppController extends Controller
     {
         $request->validate(['version_id' => 'required|exists:flutter_app_versions,id']);
 
+        \Log::info('FlutterAppManager: deactivate attempt', [
+            'user_id' => optional($request->user())->id,
+            'version_id' => $request->version_id,
+            'ip' => $request->ip(),
+        ]);
+
         try {
             $versionToDeactivate = FlutterAppVersion::findOrFail($request->input('version_id'));
             $versionToDeactivate->is_active = false;
             $versionToDeactivate->save();
 
+            \Log::info('FlutterAppManager: deactivate success', [
+                'user_id' => optional($request->user())->id,
+                'version_id' => $request->version_id,
+                'version_name' => $versionToDeactivate->version_name,
+                'ip' => $request->ip(),
+            ]);
+
             return redirect()->route('admin.flutter_app.manager')
                 ->with('success_message_flutter_app', 'Versi ' . $versionToDeactivate->version_name . ' berhasil dinonaktifkan.');
         } catch (\Exception $e) {
-            Log::error('Deactivate version error: ' . $e->getMessage());
+            \Log::error('FlutterAppManager: deactivate exception', [
+                'user_id' => optional($request->user())->id,
+                'version_id' => $request->version_id,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return redirect()->route('admin.flutter_app.manager')
                 ->with('error_message_flutter_app', 'Gagal menonaktifkan versi: ' . $e->getMessage());
         }
@@ -212,20 +250,26 @@ class FlutterAppController extends Controller
      * Handle the public download of an active Flutter APK.
      *
      * @param  \App\Models\FlutterAppVersion $version
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function publicDownload(FlutterAppVersion $version) // Menggunakan route model binding
+    public function publicDownload(FlutterAppVersion $version)
     {
         try {
-            // Pastikan versi yang diminta memang ada dan memiliki file_path
-            if (!$version->file_path || !Storage::disk('local')->exists($version->file_path)) {
-                Log::warning('Public download attempt for non-existent file or path for version ID: ' . $version->id . ', version name: ' . $version->version_name . ', path: ' . $version->file_path);
-                abort(404, 'File aplikasi tidak ditemukan atau tidak dapat diunduh saat ini.');
+            if ($version->file_path) {
+                Log::info('Public download redirect to Google Drive', [
+                    'version_id' => $version->id,
+                    'version_name' => $version->version_name,
+                    'gdrive_link' => $version->file_path,
+                ]);
+                return redirect()->away($version->file_path);
             }
-            return Storage::disk('local')->download($version->file_path, $version->file_name);
+            Log::warning('Public download failed, no gdrive_link', [
+                'version_id' => $version->id,
+                'version_name' => $version->version_name,
+            ]);
+            abort(404, 'Link Google Drive tidak ditemukan.');
         } catch (\Exception $e) {
             Log::error('Public APK download error for version ID ' . $version->id . ': ' . $e->getMessage());
-            // Sama seperti di atas, hindari redirect ke login untuk rute publik.
             abort(500, 'Gagal mengunduh aplikasi. Silakan coba lagi nanti.');
         }
     }
@@ -252,7 +296,7 @@ class FlutterAppController extends Controller
 
         $downloadUrl = null;
         try {
-            $downloadUrl = route('app.public_download', ['version' => $activeApp->version_name]);
+            $downloadUrl = route('app.public_download', ['version' => $activeApp->id]);
         } catch (\Exception $e) {
             Log::error("Gagal membuat URL unduhan untuk aplikasi Flutter: " . $e->getMessage());
             // Jangan kirim detail error ke client

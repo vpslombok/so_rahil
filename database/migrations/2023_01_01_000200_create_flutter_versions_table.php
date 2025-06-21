@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('version_name', 50)->unique()->comment('Contoh: 1.0.2, 1.0.3+5');
             $table->integer('version_code')->unique()->comment('Contoh: 3, 4, 5 (Kode versi Android/iOS)');
-            $table->string('file_name', 255)->comment('Nama file APK/AAB yang diunggah');
-            $table->string('file_path', 255)->comment('Path relatif ke file dari direktori uploads');
+            $table->string('file_name', 255)->comment('Link Google Drive APK/AAB');
+            $table->string('file_path', 255)->comment('Link Google Drive APK/AAB');
             $table->text('release_notes')->nullable()->comment('Catatan rilis untuk versi ini');
             $table->timestamp('uploaded_at')->useCurrent();
             $table->boolean('is_latest')->default(false)->comment('1 jika ini versi terbaru, 0 jika bukan');

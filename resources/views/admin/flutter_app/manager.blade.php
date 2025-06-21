@@ -4,46 +4,54 @@
 
 @section('content')
 <div class="container-fluid">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 text-gray-800">Manajemen Aplikasi Flutter</h1>
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h1 class="h3 text-primary mb-0">Manajemen Aplikasi Flutter</h1>
+            <p class="text-muted mb-0">Kelola versi aplikasi, catatan rilis, dan distribusi APK internal.</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#uploadApkModal">
+                <i class="bi bi-upload me-1"></i> Tambah Versi Baru
+            </button>
+        </div>
     </div>
 
     @include('layouts.flash-messages')
 
-    <div class="row">
-        {{-- Kiri: Form Upload + Daftar --}}
-        <div class="col-lg-8 mb-4">
-            {{-- Daftar APK --}}
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0 text-primary">Daftar Versi Aplikasi</h5>
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadApkModal">
-                        <i class="bi bi-upload me-1"></i> Upload Aplikasi Baru
-                    </button>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pb-0">
+                    <h5 class="mb-0 text-primary"><i class="bi bi-list-ul me-2"></i>Daftar Versi Aplikasi</h5>
                 </div>
                 <div class="card-body p-0">
                     @if($versions->count())
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-borderless table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th class="text-center">#</th>
                                     <th>Versi</th>
-                                    <th>Nama File</th>
-                                    <th>Ukuran</th>
+                                    <th>Link APK</th>
                                     <th>Catatan</th>
                                     <th>Status</th>
                                     <th>Tanggal</th>
-                                    <th>Aksi</th>
+                                    <th class="text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($versions as $version)
+                                @foreach($versions as $i => $version)
                                 <tr>
+                                    <td class="text-center text-muted">{{ $i+1 }}</td>
                                     <td class="fw-semibold">{{ $version->version_name }}</td>
-                                    <td>{{ $version->file_name }}</td>
-                                    <td>{{ $version->formatted_size }}</td>
-                                    <td>{{ Str::limit($version->release_notes, 40) ?: '-' }}</td>
+                                    <td>
+                                        @if($version->gdrive_link)
+                                        <a href="{{ $version->gdrive_link }}" target="_blank" rel="noopener" class="badge bg-primary text-white px-3 py-2"><i class="bi bi-google-drive me-1"></i>Download</a>
+                                        @else
+                                        <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-muted">{{ Str::limit($version->release_notes, 40) ?: '-' }}</td>
                                     <td>
                                         @if($version->is_active)
                                         <span class="badge bg-success">Aktif</span>
@@ -51,58 +59,39 @@
                                         <span class="badge bg-secondary">Tidak Aktif</span>
                                         @endif
                                     </td>
-                                    <td>{{ $version->created_at->format('d/m/Y H:i') }}</td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionsDropdown{{ $version->id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="bi bi-three-dots-vertical"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown{{ $version->id }}">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('admin.flutter_app.download', ['version_id' => $version->id]) }}">
-                                                        <i class="bi bi-download me-2"></i>Download
-                                                    </a>
-                                                </li>
-                                                @if($version->is_active)
-                                                <li>
-                                                    <form action="{{ route('admin.flutter_app.deactivate_version') }}" method="POST">
-                                                        @csrf
-                                                        <input type="hidden" name="version_id" value="{{ $version->id }}">
-                                                        <button type="submit" class="dropdown-item text-warning">
-                                                            <i class="bi bi-x-lg me-2"></i>Nonaktifkan
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @else
-                                                <li>
-                                                    <form action="{{ route('admin.flutter_app.set_active_version') }}" method="POST">
-                                                        @csrf
-                                                        <input type="hidden" name="version_id" value="{{ $version->id }}">
-                                                        <button type="submit" class="dropdown-item text-success">
-                                                            <i class="bi bi-check2-circle me-2"></i>Aktifkan
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @endif
-                                                <li>
-                                                    <hr class="dropdown-divider">
-                                                </li>
-                                                <li>
-                                                    <button class="dropdown-item text-danger" type="button"
-                                                        onclick="if(confirm('Anda yakin ingin menghapus versi {{ $version->version_name }}? File APK juga akan dihapus.')) { document.getElementById('delete-apk-{{ $version->id }}-form').submit(); }">
-                                                        <i class="bi bi-trash me-2"></i>Hapus
-                                                    </button>
-                                                    <form id="delete-apk-{{ $version->id }}-form" action="{{ route('admin.flutter_app.delete') }}" method="POST" style="display: none;">
-                                                        @csrf
-                                                        <input type="hidden" name="version_id" value="{{ $version->id }}">
-                                                    </form>
-                                                </li>
-                                            </ul>
+                                    <td><small>{{ $version->created_at->format('d/m/Y H:i') }}</small></td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            @if($version->gdrive_link)
+                                            <a href="{{ $version->gdrive_link }}" target="_blank" rel="noopener" class="btn btn-outline-primary" title="Download APK">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            @endif
+                                            @if($version->is_active)
+                                            <form action="{{ route('admin.flutter_app.deactivate_version') }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="version_id" value="{{ $version->id }}">
+                                                <button type="submit" class="btn btn-outline-warning" title="Nonaktifkan">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </form>
+                                            @else
+                                            <form action="{{ route('admin.flutter_app.set_active_version') }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="version_id" value="{{ $version->id }}">
+                                                <button type="submit" class="btn btn-outline-success" title="Aktifkan">
+                                                    <i class="bi bi-check2-circle"></i>
+                                                </button>
+                                            </form>
+                                            @endif
+                                            <form id="delete-apk-{{ $version->id }}-form" action="{{ route('admin.flutter_app.delete') }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="version_id" value="{{ $version->id }}">
+                                                <button type="submit" class="btn btn-outline-danger" title="Hapus" onclick="return confirm('Anda yakin ingin menghapus versi {{ $version->version_name }}?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
-                                        {{-- Kode lama dengan btn-group, bisa dihapus setelah dropdown berfungsi --}}
-                                        {{-- <div class="btn-group btn-group-sm" role="group">
-                                            ... (tombol-tombol lama) ...
-                                        </div> --}}
                                     </td>
                                 </tr>
                                 @endforeach
@@ -117,42 +106,36 @@
                 </div>
             </div>
         </div>
-
-        {{-- Kanan: Informasi --}}
-        <div class="col-lg-4 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0 text-primary">Informasi</h5>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pb-0">
+                    <h5 class="mb-0 text-primary"><i class="bi bi-info-circle me-2"></i>Informasi</h5>
                 </div>
                 <div class="card-body">
-                    <p>Gunakan halaman ini untuk mengelola versi aplikasi Flutter Anda secara internal.</p>
-                    <ul class="mb-0">
-                        <li>Upload file APK</li>
-                        <li>Catatan rilis</li>
-                        <li>Penandaan versi aktif</li>
-                        <li>Download & hapus APK</li>
-                        <li>Distribusi langsung tanpa Play Store</li>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="bi bi-upload me-2 text-primary"></i>Tambah versi aplikasi dengan link Google Drive.</li>
+                        <li class="mb-2"><i class="bi bi-card-text me-2 text-primary"></i>Catat perubahan rilis setiap versi.</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle me-2 text-success"></i>Tandai versi aktif untuk update otomatis.</li>
+                        <li class="mb-2"><i class="bi bi-download me-2 text-primary"></i>Download APK langsung dari Google Drive.</li>
+                        <li><i class="bi bi-share me-2 text-primary"></i>Distribusi internal tanpa Play Store.</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <!-- Modal Upload APK -->
 <div class="modal fade" id="uploadApkModal" tabindex="-1" aria-labelledby="uploadApkModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="uploadApkModalLabel">Upload Aplikasi Baru (.APK)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="uploadApkModalLabel"><i class="bi bi-google-drive me-2"></i>Tambah Versi Aplikasi (Link Google Drive)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('admin.flutter_app.upload') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('admin.flutter_app.upload') }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    {{-- Flash Messages khusus upload bisa diletakkan di sini jika ingin di dalam modal, atau biarkan di atas --}}
-                    {{-- Jika ada error validasi dari controller, modal ini akan perlu dibuka kembali --}}
-                    @if($errors->uploadForm->any()) {{-- Menggunakan error bag kustom --}}
+                    @if($errors->uploadForm->any())
                     <div class="alert alert-danger">
                         <p class="fw-bold">Terdapat kesalahan pada input Anda:</p>
                         <ul>
@@ -162,13 +145,13 @@
                         </ul>
                     </div>
                     @endif
-
                     <div class="mb-3">
-                        <label for="modal_apk_file" class="form-label">File APK (.apk) <span class="text-danger">*</span></label>
-                        <input class="form-control @error('apk_file', 'uploadForm') is-invalid @enderror" type="file" id="modal_apk_file" name="apk_file" accept=".apk" required>
-                        @error('apk_file', 'uploadForm')
+                        <label for="modal_gdrive_link" class="form-label">Link Google Drive APK <span class="text-danger">*</span></label>
+                        <input class="form-control @error('gdrive_link', 'uploadForm') is-invalid @enderror" type="url" id="modal_gdrive_link" name="gdrive_link" placeholder="https://drive.google.com/file/d/xxx/view?usp=sharing" value="{{ old('gdrive_link') }}" required>
+                        @error('gdrive_link', 'uploadForm')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+                        <small class="form-text text-muted">Pastikan link Google Drive dapat diakses publik (Anyone with the link can view).</small>
                     </div>
                     <div class="mb-3">
                         <label for="modal_version_name" class="form-label">Versi Aplikasi <span class="text-danger">*</span></label>
@@ -185,10 +168,10 @@
                         @enderror
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-upload me-1"></i> Upload Aplikasi
+                        <i class="bi bi-save me-1"></i> Simpan Versi
                     </button>
                 </div>
             </form>
@@ -205,19 +188,46 @@
 
     .table .dropdown-menu {
         z-index: 1050;
-        /* pastikan dropdown lebih tinggi dari elemen lain */
+    }
+
+    .badge.bg-primary.text-white {
+        font-size: 0.95em;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+
+    .modal-header.bg-primary {
+        background: linear-gradient(90deg, #0d6efd 60%, #0a58ca 100%);
+    }
+
+    .modal-footer.bg-light {
+        border-top: 1px solid #e9ecef;
+    }
+
+    .btn-outline-primary,
+    .btn-outline-success,
+    .btn-outline-warning,
+    .btn-outline-danger {
+        min-width: 36px;
+    }
+
+    .d-flex.gap-2>* {
+        margin-right: 0 !important;
     }
 </style>
 @endpush
-
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Jika ada error validasi dari form upload, buka modalnya
-        @if(session('open_upload_modal') || $errors->uploadForm->any())
-        var uploadModal = new bootstrap.Modal(document.getElementById('uploadApkModal'));
-        uploadModal.show();
-        @endif
+        var shouldOpenModal = {
+            {
+                (session('open_upload_modal') || (isset($errors) && isset($errors['uploadForm']) && $errors['uploadForm'] - > any())) ? 'true' : 'false'
+            }
+        };
+        if (shouldOpenModal === 'true') {
+            var uploadModal = new bootstrap.Modal(document.getElementById('uploadApkModal'));
+            uploadModal.show();
+        }
     });
 </script>
 @endpush
