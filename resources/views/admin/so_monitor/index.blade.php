@@ -42,63 +42,75 @@
             </div>
             @else
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-hover align-middle bg-white rounded shadow-sm">
+                    <thead class="thead-light">
                         <tr>
-                            <th>No.</th>
+                            <th class="text-center">No.</th>
                             <th>User</th>
                             <th>Nomor Nota</th>
                             <th>SO Event</th>
-                            <th>Waktu Mulai Sesi</th>
-                            <th>Aktivitas Terakhir</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
+                            <th class="text-center">Waktu Mulai</th>
+                            <th class="text-center">Aktivitas Terakhir</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($sessions as $index => $session)
                         <tr>
-                            <td>{{ $sessions->firstItem() + $index }}</td>
+                            <td class="text-center">{{ $sessions->firstItem() + $index }}</td>
                             <td>
                                 @if($session->user)
-                                {{ $session->user->name }} ({{ $session->user->username }})
+                                <span class="fw-bold">{{ $session->user->name }}</span>
+                                <span class="badge bg-secondary ms-1">{{ $session->user->username }}</span>
                                 @else
                                 <span class="text-muted">User Tidak Diketahui</span>
                                 @endif
                             </td>
-                            <td>{{ $session->nomor_nota }}</td>
-                            <td>{{ $session->stockOpnameEvent->name ?? 'SO Rak Umum' }}</td>
-                            <td>{{ \Carbon\Carbon::parse($session->session_start_time)->isoFormat('DD MMM YYYY, HH:mm') }}</td>
-                            <td>{{ \Carbon\Carbon::parse($session->last_activity_time)->isoFormat('DD MMM YYYY, HH:mm') }}</td>
-                            <td>
+                            <td><span class="fw-bold text-primary">{{ $session->nomor_nota }}</span></td>
+                            <td><span class="badge bg-info text-dark">{{ $session->stockOpnameEvent->name ?? 'SO Rak Umum' }}</span></td>
+                            <td class="text-center">{{ \Carbon\Carbon::parse($session->session_start_time)->isoFormat('DD MMM YYYY, HH:mm') }}</td>
+                            <td class="text-center">{{ \Carbon\Carbon::parse($session->last_activity_time)->isoFormat('DD MMM YYYY, HH:mm') }}</td>
+                            <td class="text-center">
                                 @if ($session->finalization_status === 'Finalized')
-                                    <span class="badge bg-success">Finalisasi</span>
+                                <span class="badge bg-success">Finalisasi</span>
                                 @else
-                                    <span class="badge bg-warning text-dark">Aktif</span>
+                                <span class="badge bg-warning text-dark">Aktif</span>
                                 @endif
                             </td>
-                            <td>
-                                {{-- Tombol Detail selalu tampil, namun mungkin perlu penyesuaian di halaman detail jika data sudah final --}}
-                                <a href="{{ route('stock_check.show_differences', ['nomor_nota' => $session->nomor_nota, 'user_id' => $session->user_id, 'stock_opname_event_id' => $session->stock_opname_event_id]) }}" class="btn btn-info btn-sm mb-1" title="Lihat Detail Entri">
-                                    <i class="bi bi-eye-fill"></i> Detail Temp
-                                </a>
-
-                                @if ($session->finalization_status !== 'Finalized')
-                                    <form action="{{ route('admin.so_monitor.destroy_session') }}" method="POST" class="d-inline" onsubmit="return confirm('Anda yakin ingin menghapus sesi SO ini (Nota: {{ $session->nomor_nota }} untuk user {{ $session->user->name ?? $session->user_id }})? Semua entri sementara akan dihapus permanen.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="nomor_nota" value="{{ $session->nomor_nota }}">
-                                        <input type="hidden" name="user_id" value="{{ $session->user_id }}">
-                                        <input type="hidden" name="stock_opname_event_id" value="{{ $session->stock_opname_event_id }}">
-                                        <button type="submit" class="btn btn-danger btn-sm mb-1" title="Hapus Sesi SO (Hapus Entri Sementara)">
-                                            <i class="bi bi-trash-fill"></i> Hapus Temp
-                                        </button>
-                                    </form>
-                                @else
-                                    <button class="btn btn-secondary btn-sm mb-1" disabled title="Sesi sudah difinalisasi, entri sementara tidak dapat dihapus dari sini.">
-                                        <i class="bi bi-trash-fill"></i> Hapus Temp
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="aksiDropdown{{ $session->nomor_nota }}{{ $session->user_id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
                                     </button>
-                                @endif
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="aksiDropdown{{ $session->nomor_nota }}{{ $session->user_id }}">
+                                        <li>
+                                            <a href="{{ route('stock_check.show_differences', ['nomor_nota' => $session->nomor_nota, 'user_id' => $session->user_id]) }}" class="dropdown-item" title="Lihat Detail Entri">
+                                                <i class="bi bi-eye-fill text-primary me-2"></i> Detail Temp
+                                            </a>
+                                        </li>
+                                        @if ($session->finalization_status !== 'Finalized')
+                                        <li>
+                                            <form action="{{ route('admin.so_monitor.destroy_session') }}" method="POST" onsubmit="return confirm('Anda yakin ingin menghapus sesi SO ini (Nota: {{ $session->nomor_nota }} untuk user {{ $session->user->name ?? $session->user_id }})? Semua entri sementara akan dihapus permanen.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="nomor_nota" value="{{ $session->nomor_nota }}">
+                                                <input type="hidden" name="user_id" value="{{ $session->user_id }}">
+                                                <input type="hidden" name="stock_opname_event_id" value="{{ $session->stock_opname_event_id }}">
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    <i class="bi bi-trash-fill me-2"></i> Hapus Temp
+                                                </button>
+                                            </form>
+                                        </li>
+                                        @else
+                                        <li>
+                                            <button class="dropdown-item text-muted" disabled>
+                                                <i class="bi bi-trash-fill me-2"></i> Hapus Temp
+                                            </button>
+                                        </li>
+                                        @endif
+                                    </ul>
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -115,3 +127,37 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .table th,
+    .table td {
+        vertical-align: middle;
+    }
+
+    .table thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .badge {
+        font-size: 0.95em;
+        padding: 0.5em 0.8em;
+        border-radius: 0.7em;
+    }
+
+    .btn-outline-primary {
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .btn-outline-primary i {
+        font-size: 1.1rem;
+    }
+</style>
+@endpush

@@ -46,6 +46,27 @@
             timer: 3000,
         });
         @endif
+
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Sukses!',
+                text: `{!! session('success') !!}`,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: `{!! session('error') !!}`,
+            });
+        @endif
     });
 </script>
 @endpush

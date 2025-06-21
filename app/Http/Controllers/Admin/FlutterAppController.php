@@ -32,7 +32,7 @@ class FlutterAppController extends Controller
     public function upload(Request $request)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'gdrive_link' => 'required|url|max:500',
+            'file_name' => 'required|url|max:500',
             'version_name' => [
                 'required',
                 'string',
@@ -45,7 +45,7 @@ class FlutterAppController extends Controller
         \Log::info('FlutterAppManager: upload attempt', [
             'user_id' => optional($request->user())->id,
             'version_name' => $request->version_name,
-            'gdrive_link' => $request->gdrive_link,
+            'file_name' => $request->file_name,
             'ip' => $request->ip(),
         ]);
 
@@ -66,17 +66,17 @@ class FlutterAppController extends Controller
         try {
             FlutterAppVersion::create([
                 'version_name' => $validatedData['version_name'],
-                'gdrive_link' => $validatedData['gdrive_link'],
+                'file_name' => $validatedData['file_name'],
                 'release_notes' => $validatedData['release_notes'],
                 'is_active' => false,
-                'file_name' => $validatedData['gdrive_link'], // file_name diisi link Google Drive
-                'file_path' => $validatedData['gdrive_link'], // file_path diisi link Google Drive
+                'file_name' => $validatedData['file_name'], // file_name diisi link Google Drive
+                'file_path' => $validatedData['file_name'], // file_path diisi link Google Drive
             ]);
 
             \Log::info('FlutterAppManager: version created', [
                 'user_id' => optional($request->user())->id,
                 'version_name' => $validatedData['version_name'],
-                'gdrive_link' => $validatedData['gdrive_link'],
+                'file_name' => $validatedData['file_name'],
                 'ip' => $request->ip(),
             ]);
 
@@ -259,11 +259,11 @@ class FlutterAppController extends Controller
                 Log::info('Public download redirect to Google Drive', [
                     'version_id' => $version->id,
                     'version_name' => $version->version_name,
-                    'gdrive_link' => $version->file_path,
+                    'file_name' => $version->file_path,
                 ]);
                 return redirect()->away($version->file_path);
             }
-            Log::warning('Public download failed, no gdrive_link', [
+            Log::warning('Public download failed, no file_name', [
                 'version_id' => $version->id,
                 'version_name' => $version->version_name,
             ]);
@@ -314,5 +314,51 @@ class FlutterAppController extends Controller
                 'file_size' => $activeApp->file_size,
             ]
         ], 200);
+    }
+
+    /**
+     * Update an existing Flutter app version (edit modal).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'version_id' => 'required|exists:flutter_app_versions,id',
+            'file_name' => 'required|url|max:500',
+            'version_name' => [
+                'required',
+                'string',
+                'max:25',
+                Rule::unique('flutter_app_versions', 'version_name')->ignore($request->version_id)
+            ],
+            'release_notes' => 'nullable|string|max:5000',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('admin.flutter_app.manager')
+                ->withErrors($validator, 'uploadForm')
+                ->withInput()
+                ->with('open_upload_modal', false);
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            $version = FlutterAppVersion::findOrFail($validated['version_id']);
+            $version->version_name = $validated['version_name'];
+            $version->file_name = $validated['file_name'];
+            $version->file_name = $validated['file_name'];
+            $version->file_path = $validated['file_name'];
+            $version->release_notes = $validated['release_notes'];
+            $version->save();
+
+            return redirect()->route('admin.flutter_app.manager')
+                ->with('success_message_flutter_app', 'Versi aplikasi berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.flutter_app.manager')
+                ->with('error_message_flutter_app', 'Gagal memperbarui versi aplikasi: ' . $e->getMessage());
+        }
     }
 }

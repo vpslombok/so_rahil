@@ -303,18 +303,23 @@ class StockCheckController extends Controller
     public function showDifferences(Request $request, string $nomor_nota)
     {
         $userId = auth()->id();
-        if (!$userId) {
+        $isAdmin = auth()->user() && auth()->user()->role === 'admin';
+        $targetUserId = $userId;
+        if ($isAdmin && $request->filled('user_id')) {
+            $targetUserId = $request->input('user_id');
+        }
+        if (!$targetUserId) {
             return redirect()->route('login')->with('error_message', 'Sesi Anda telah berakhir. Silakan login kembali.');
         }
 
         // Fetch context entry ONCE
-        $contextEntry = TempStockEntry::where('user_id', $userId)
+        $contextEntry = TempStockEntry::where('user_id', $targetUserId)
             ->where('nomor_nota', $nomor_nota)
             ->select('stock_opname_event_id')
             ->first();
 
         if (!$contextEntry) {
-            \Log::warning("StockCheckController@showDifferences: No TempStockEntry found for user_id {$userId} and nomor_nota {$nomor_nota}.");
+            \Log::warning("StockCheckController@showDifferences: No TempStockEntry found for user_id {$targetUserId} and nomor_nota {$nomor_nota}.");
             return redirect()->route('so_by_selected.index')
                 ->with('error_message', 'Sesi Stock Opname dengan nota tersebut tidak ditemukan atau belum ada entri.');
         }
@@ -324,7 +329,7 @@ class StockCheckController extends Controller
             : null;
 
         // Ambil semua temp entries sekaligus, eager load product, dan ambil system_stock terbaru dari user_product_stock
-        $tempEntries = TempStockEntry::where('user_id', $userId)
+        $tempEntries = TempStockEntry::where('user_id', $targetUserId)
             ->where('nomor_nota', $nomor_nota)
             ->whereNotNull('physical_stock')
             ->with(['product:id,name,product_code,barcode'])
@@ -334,7 +339,7 @@ class StockCheckController extends Controller
         // Ambil semua product_id
         $productIds = $tempEntries->pluck('product_id')->unique()->toArray();
         // Ambil stok terbaru dari user_product_stock sekaligus
-        $userProductStocks = \App\Models\UserProductStock::where('user_id', $userId)
+        $userProductStocks = \App\Models\UserProductStock::where('user_id', $targetUserId)
             ->whereIn('product_id', $productIds)
             ->pluck('stock', 'product_id');
 

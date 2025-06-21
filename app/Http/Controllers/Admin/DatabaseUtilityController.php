@@ -9,6 +9,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Artisan;
 
 if (!function_exists('formatBytes')) {
     function formatBytes($bytes, $precision = 2)
@@ -268,15 +269,20 @@ class DatabaseUtilityController extends Controller
     }
 
     /**
-     * Jalankan migrate artisan command dari halaman admin
+     * Jalankan migrasi database dari halaman admin.
      */
     public function runMigration()
     {
         try {
-            \Artisan::call('migrate', ['--force' => true]);
-            return redirect()->route('admin.database.utility')->with('success', 'Migrasi database berhasil dijalankan.');
+            $output = Artisan::call('migrate', ['--force' => true]);
+            $tables = $this->getTableNames();
+            $successMsg = 'Migrasi database berhasil dijalankan.';
+            if (!empty($tables)) {
+                $successMsg .= ' Tabel saat ini: ' . implode(', ', $tables);
+            }
+            return redirect()->back()->with('success', $successMsg);
         } catch (\Exception $e) {
-            return redirect()->route('admin.database.utility')->with('error', 'Gagal menjalankan migrasi: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menjalankan migrasi: ' . $e->getMessage());
         }
     }
 }

@@ -150,6 +150,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/flutter-app-manager/versions', [FlutterAppController::class, 'versions'])->name('flutter_app.versions');
         Route::post('/flutter-app-manager/set-active-version', [FlutterAppController::class, 'setActiveVersion'])->name('flutter_app.set_active_version');
         Route::post('/flutter-app-manager/deactivate-version', [FlutterAppController::class, 'deactivateVersion'])->name('flutter_app.deactivate_version');
+        Route::post('/flutter-app-manager/update', [FlutterAppController::class, 'update'])->name('flutter_app.update');
 
         //------------------------------------------------------------------
         // Management Database Utility (Admin)
@@ -183,5 +184,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api-log', function () { // Akan menjadi admin.api_log.index
             return "Halaman Log API (admin.api_log.index)";
         })->name('api_log');
+
+        //------------------------------------------------------------------
+        // Management REST API Control (Admin)
+        //------------------------------------------------------------------
+        Route::get('/api-control', [\App\Http\Controllers\Admin\ApiControlController::class, 'index'])->name('api_control.index');
+        Route::post('/api-control/toggle', [\App\Http\Controllers\Admin\ApiControlController::class, 'toggle'])->name('api_control.toggle');
     });
 });
