@@ -28,27 +28,85 @@ $admin_nav_items = [
 @endphp
 
 {{-- Sidebar untuk layar besar (selalu terlihat di dalam .sidebar-wrapper) --}}
-<nav id="sidebarMenuMain" class="bg-light sidebar border-end shadow-sm" style="min-width: 260px; max-width: 260px; height: 100%;">
-    {{-- Konten di dalam sidebar akan sticky relatif terhadap .sidebar-wrapper --}}
-    <div class="d-flex flex-column h-100" style="overflow-y: auto;"> {{-- Gunakan flexbox untuk struktur dan pastikan overflow --}}
-        <div class="px-3 mb-3 d-flex align-items-center">
-            {{-- Anda bisa menambahkan logo di sini --}}
-            {{-- <img src="{{ asset('path/to/your/logo.png') }}" alt="Logo" style="height: 32px;" class="me-2"> --}}
-            <a class="navbar-brand fs-5 fw-semibold" href="{{ route('dashboard') }}">
-                <i class="bi bi-box-seam-fill me-1"></i> {{ config('app.name', 'Stok Opname') }}
-            </a>
-        </div>
+<div class="sidebar-wrapper d-none d-lg-block">
+    <nav id="sidebarMenuMain" class="bg-light sidebar border-end shadow-sm" style="min-width: 260px; max-width: 260px; height: 100%;">
+        <div class="d-flex flex-column h-100" style="overflow-y: auto;">
+            <div class="px-3 mb-3 d-flex align-items-center">
+                {{-- Anda bisa menambahkan logo di sini --}}
+                {{-- <img src="{{ asset('path/to/your/logo.png') }}" alt="Logo" style="height: 32px;" class="me-2"> --}}
+                <a class="navbar-brand fs-5 fw-semibold" href="{{ route('dashboard') }}">
+                    <i class="bi bi-box-seam-fill me-1"></i> {{ config('app.name', 'Stok Opname') }}
+                </a>
+            </div>
 
-        <ul class="nav flex-column px-2 flex-grow-1"> {{-- flex-grow-1 agar list menu mengisi sisa ruang --}}
-            {{-- Contoh Grup Menu --}}
+            <ul class="nav flex-column px-2 flex-grow-1"> {{-- flex-grow-1 agar list menu mengisi sisa ruang --}}
+                {{-- Contoh Grup Menu --}}
+                <li class="nav-item mt-2 mb-1 px-2">
+                    <small class="text-muted text-uppercase fw-semibold">Utama</small>
+                </li>
+
+                @foreach ($main_nav_items as $item)
+                @if(Route::has($item['route_name'])) {{-- Cek apakah rute ada --}}
+                <li class="nav-item mb-1">
+                    <a class="nav-link py-2 px-3 rounded d-flex align-items-center {{ Str::is($item['active_pattern'], $current_route_name) ? 'active-nav-item' : 'text-dark link-hover' }}"
+                        href="{{ route($item['route_name']) }}"
+                        @if(Str::is($item['active_pattern'], $current_route_name)) aria-current="page" @endif>
+                        <i class="bi {{ $item['icon'] }} fs-5 me-2"></i>
+                        <span class="fw-medium">{{ $item['text'] }}</span>
+                    </a>
+                </li>
+                @endif
+                @endforeach
+
+                {{-- Grup Menu untuk Admin --}}
+                @if (!empty($admin_nav_items))
+                <li class="nav-item mt-3 mb-1 px-2">
+                    <small class="text-muted text-uppercase fw-semibold">Administrasi</small>
+                </li>
+                @foreach ($admin_nav_items as $item)
+                @if(isset($item['is_modal']) && $item['is_modal'])
+                <li class="nav-item mb-1">
+                    <a class="nav-link py-2 px-3 rounded d-flex align-items-center text-dark link-hover"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="{{ $item['modal_target'] }}">
+                        <i class="bi {{ $item['icon'] }} fs-5 me-2"></i>
+                        <span class="fw-medium">{{ $item['text'] }}</span>
+                    </a>
+                </li>
+                @elseif(Route::has($item['route_name'])) {{-- Cek apakah rute ada --}}
+                <li class="nav-item mb-1">
+                    <a class="nav-link py-2 px-3 rounded d-flex align-items-center {{ Str::is($item['active_pattern'], $current_route_name) ? 'active-nav-item' : 'text-dark link-hover' }}"
+                        href="{{ route($item['route_name']) }}"
+                        @if(Str::is($item['active_pattern'], $current_route_name)) aria-current="page" @endif>
+                        <i class="bi {{ $item['icon'] }} fs-5 me-2"></i>
+                        <span class="fw-medium">{{ $item['text'] }}</span>
+                    </a>
+                </li>
+                @endif
+                @endforeach
+                @endif
+            </ul>
+        </div>
+    </nav>
+</div>
+
+{{-- Sidebar Offcanvas (untuk layar kecil) --}}
+<div class="offcanvas offcanvas-start bg-light border-end d-lg-none" tabindex="-1" id="sidebarOffcanvasLayout" aria-labelledby="sidebarOffcanvasLayoutLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="sidebarOffcanvasLayoutLabel"><i class="bi bi-list-ul"></i> Menu Utama</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-2">
+        <ul class="nav flex-column">
             <li class="nav-item mt-2 mb-1 px-2">
                 <small class="text-muted text-uppercase fw-semibold">Utama</small>
             </li>
-
             @foreach ($main_nav_items as $item)
-            @if(Route::has($item['route_name'])) {{-- Cek apakah rute ada --}}
+            @if(Route::has($item['route_name']))
             <li class="nav-item mb-1">
-                <a class="nav-link py-2 px-3 rounded d-flex align-items-center {{ Str::is($item['active_pattern'], $current_route_name) ? 'active-nav-item' : 'text-dark link-hover' }}"
+                <a class="nav-link py-2 px-3 rounded d-flex align-items-center {{ Str::is($item['active_pattern'], $current_route_name) ? 'active-nav-item-offcanvas' : 'text-dark link-hover-offcanvas' }}"
                     href="{{ route($item['route_name']) }}"
                     @if(Str::is($item['active_pattern'], $current_route_name)) aria-current="page" @endif>
                     <i class="bi {{ $item['icon'] }} fs-5 me-2"></i>
@@ -57,8 +115,6 @@ $admin_nav_items = [
             </li>
             @endif
             @endforeach
-
-            {{-- Grup Menu untuk Admin --}}
             @if (!empty($admin_nav_items))
             <li class="nav-item mt-3 mb-1 px-2">
                 <small class="text-muted text-uppercase fw-semibold">Administrasi</small>
@@ -66,7 +122,7 @@ $admin_nav_items = [
             @foreach ($admin_nav_items as $item)
             @if(isset($item['is_modal']) && $item['is_modal'])
             <li class="nav-item mb-1">
-                <a class="nav-link py-2 px-3 rounded d-flex align-items-center text-dark link-hover"
+                <a class="nav-link py-2 px-3 rounded d-flex align-items-center text-dark link-hover-offcanvas"
                     href="#"
                     role="button"
                     data-bs-toggle="modal"
@@ -75,9 +131,9 @@ $admin_nav_items = [
                     <span class="fw-medium">{{ $item['text'] }}</span>
                 </a>
             </li>
-            @elseif(Route::has($item['route_name'])) {{-- Cek apakah rute ada --}}
+            @elseif(Route::has($item['route_name']))
             <li class="nav-item mb-1">
-                <a class="nav-link py-2 px-3 rounded d-flex align-items-center {{ Str::is($item['active_pattern'], $current_route_name) ? 'active-nav-item' : 'text-dark link-hover' }}"
+                <a class="nav-link py-2 px-3 rounded d-flex align-items-center {{ Str::is($item['active_pattern'], $current_route_name) ? 'active-nav-item-offcanvas' : 'text-dark link-hover-offcanvas' }}"
                     href="{{ route($item['route_name']) }}"
                     @if(Str::is($item['active_pattern'], $current_route_name)) aria-current="page" @endif>
                     <i class="bi {{ $item['icon'] }} fs-5 me-2"></i>
@@ -89,4 +145,30 @@ $admin_nav_items = [
             @endif
         </ul>
     </div>
-</nav>
+</div>
+
+@push('styles')
+<style>
+    .active-nav-item {
+        background-color: var(--bs-primary);
+        color: var(--bs-white) !important;
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+    }
+
+    .link-hover:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--bs-emphasis-color);
+    }
+
+    .active-nav-item-offcanvas {
+        background-color: var(--bs-primary);
+        color: var(--bs-white) !important;
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+    }
+
+    .link-hover-offcanvas:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--bs-emphasis-color);
+    }
+</style>
+@endpush

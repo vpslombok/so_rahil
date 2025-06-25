@@ -216,6 +216,10 @@ class DatabaseUtilityController extends Controller
      */
     public function createBackup()
     {
+        // Cek apakah fungsi exec tersedia
+        if (!function_exists('exec') || in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))))) {
+            return redirect()->route('admin.database.utility')->with('error', 'Backup database gagal: Fungsi exec() dinonaktifkan di server. Silakan gunakan VPS/hosting yang mendukung, atau gunakan package seperti spatie/db-dumper.');
+        }
         $backupPath = storage_path('app/backup');
         if (!is_dir($backupPath)) {
             mkdir($backupPath, 0755, true);

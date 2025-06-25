@@ -190,19 +190,14 @@
     @include('layouts.navbar')
 
     <div class="main-wrapper">
-        {{-- Sidebar --}}
-        <div class="sidebar-wrapper d-none d-lg-block"> {{-- Hanya tampil di layar besar --}}
-            @include('layouts.sidebar')
-        </div>
+        {{-- Sidebar (desktop & mobile offcanvas, satu file) --}}
+        @include('layouts.sidebar')
 
         {{-- Konten Utama --}}
         <main class="content-wrapper">
             <div class="container-fluid p-3 p-md-4"> @yield('content') </div>
         </main>
     </div>
-
-    {{-- Offcanvas Sidebar untuk layar kecil (dipanggil dari navbar) --}}
-    @include('layouts.sidebar-offcanvas')
 
     {{-- Scripts --}}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
