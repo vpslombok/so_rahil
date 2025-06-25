@@ -213,13 +213,12 @@ class DatabaseUtilityController extends Controller
 
     /**
      * Backup database ke storage/app/backup
+     *
+     * Menggunakan spatie/db-dumper jika exec() tidak tersedia.
+     * composer require spatie/db-dumper
      */
     public function createBackup()
     {
-        // Cek apakah fungsi exec tersedia
-        if (!function_exists('exec') || in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))))) {
-            return redirect()->route('admin.database.utility')->with('error', 'Backup database gagal: Fungsi exec() dinonaktifkan di server. Silakan gunakan VPS/hosting yang mendukung, atau gunakan package seperti spatie/db-dumper.');
-        }
         $backupPath = storage_path('app/backup');
         if (!is_dir($backupPath)) {
             mkdir($backupPath, 0755, true);
@@ -227,21 +226,42 @@ class DatabaseUtilityController extends Controller
         $filename = 'backup_' . date('Ymd_His') . '.sql';
         $filePath = $backupPath . DIRECTORY_SEPARATOR . $filename;
 
-        $db = config('database.connections.mysql.database');
-        $user = config('database.connections.mysql.username');
-        $pass = config('database.connections.mysql.password');
-        $host = config('database.connections.mysql.host');
-        $port = config('database.connections.mysql.port', 3306);
+        // Jika exec tersedia, gunakan mysqldump
+        if (function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))))) {
+            $db = config('database.connections.mysql.database');
+            $user = config('database.connections.mysql.username');
+            $pass = config('database.connections.mysql.password');
+            $host = config('database.connections.mysql.host');
+            $port = config('database.connections.mysql.port', 3306);
 
-        $command = "mysqldump --user={$user} --password={$pass} --host={$host} --port={$port} {$db} > \"{$filePath}\"";
-        $result = null;
-        $output = null;
-        exec($command, $output, $result);
+            $command = "mysqldump --user={$user} --password={$pass} --host={$host} --port={$port} {$db} > \"{$filePath}\"";
+            $result = null;
+            $output = null;
+            exec($command, $output, $result);
 
-        if ($result === 0) {
-            return redirect()->route('admin.database.utility')->with('success', 'Backup database berhasil: ' . $filename);
-        } else {
-            return redirect()->route('admin.database.utility')->with('error', 'Backup database gagal.');
+            if ($result === 0) {
+                return redirect()->route('admin.database.utility')->with('success', 'Backup database berhasil: ' . $filename);
+            } else {
+                return redirect()->route('admin.database.utility')->with('error', 'Backup database gagal.');
+            }
+        }
+
+        // Jika exec tidak tersedia, coba gunakan spatie/db-dumper
+        try {
+            if (class_exists('Spatie\DbDumper\Databases\MySql')) {
+                \Spatie\DbDumper\Databases\MySql::create()
+                    ->setDbName(config('database.connections.mysql.database'))
+                    ->setUserName(config('database.connections.mysql.username'))
+                    ->setPassword(config('database.connections.mysql.password'))
+                    ->setHost(config('database.connections.mysql.host'))
+                    ->setPort(config('database.connections.mysql.port', 3306))
+                    ->dumpToFile($filePath);
+                return redirect()->route('admin.database.utility')->with('success', 'Backup database berhasil: ' . $filename);
+            } else {
+                return redirect()->route('admin.database.utility')->with('error', 'Backup database gagal: Package spatie/db-dumper belum terpasang. Jalankan composer require spatie/db-dumper');
+            }
+        } catch (\Exception $e) {
+            return redirect()->route('admin.database.utility')->with('error', 'Backup database gagal: ' . $e->getMessage());
         }
     }
 
