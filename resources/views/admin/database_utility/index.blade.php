@@ -25,6 +25,27 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info small mb-3">
+                        <b>Restore:</b> hanya mengimpor data dari file backup, <u>akan gagal jika tabel sudah ada</u>.<br>
+                        <b>Force Restore:</b> <span class="text-danger">menghapus semua tabel & views (kecuali migrations) sebelum mengimpor backup</span>, cocok untuk reset total database.<br>
+                        <b>Tips:</b> Gunakan file backup hasil <code>phpMyAdmin</code> atau fitur backup di halaman ini. Pastikan backup sesuai dengan struktur database aplikasi.
+                    </div>
+                    <form action="{{ route('admin.database.backup.upload') }}" method="POST" enctype="multipart/form-data" class="mb-4">
+                        @csrf
+                        <div class="row g-2 align-items-center">
+                            <div class="col-auto">
+                                <input type="file" name="backup_file" accept=".sql,.txt" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-upload"></i> Upload Backup
+                                </button>
+                            </div>
+                            <div class="col-auto text-muted small">
+                                Maksimal 10MB, format: .sql atau .txt
+                            </div>
+                        </div>
+                    </form>
                     @if(!empty($backups) && count($backups) > 0)
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle">
@@ -45,16 +66,44 @@
                                     <td>{{ $backup['size'] }}</td>
                                     <td>{{ $backup['date'] }}</td>
                                     <td class="text-center">
-                                        <a href="{{ route('admin.database.backup.download', $backup['name']) }}" class="btn btn-sm btn-success me-1"><i class="bi bi-download"></i> Download</a>
-                                        <form action="{{ route('admin.database.backup.restore', $backup['name']) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Restore backup ini? Data saat ini akan diganti!');">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-warning me-1"><i class="bi bi-arrow-clockwise"></i> Restore</button>
-                                        </form>
-                                        <form action="{{ route('admin.database.backup.delete', $backup['name']) }}" method="POST" class="d-inline-block delete-backup-form">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="button" class="btn btn-sm btn-danger btn-delete-backup"><i class="bi bi-trash"></i> Hapus</button>
-                                        </form>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="aksiDropdown{{ $i }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-list"></i> Aksi
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="aksiDropdown{{ $i }}">
+                                                <li>
+                                                    <a href="{{ route('admin.database.backup.download', $backup['name']) }}" class="dropdown-item">
+                                                        <i class="bi bi-download"></i> Download
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <form action="{{ route('admin.database.backup.restore', $backup['name']) }}" method="POST" onsubmit="return confirm('Restore backup ini? Data saat ini akan diganti!\n\nRestore: hanya mengimpor data, gagal jika tabel sudah ada.');">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item text-warning" title="Restore: hanya mengimpor data, gagal jika tabel sudah ada.">
+                                                            <i class="bi bi-arrow-clockwise"></i> Restore
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form action="{{ route('admin.database.backup.restore', [$backup['name']]) }}" method="POST" onsubmit="return confirm('Force Restore akan menghapus semua tabel & views (kecuali migrations) sebelum restore! Seluruh data akan diganti. Lanjutkan?');">
+                                                        @csrf
+                                                        <input type="hidden" name="force" value="1">
+                                                        <button type="submit" class="dropdown-item text-danger" title="Force Restore: hapus semua tabel & views sebelum restore">
+                                                            <i class="bi bi-exclamation-triangle"></i> Force Restore
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form action="{{ route('admin.database.backup.delete', $backup['name']) }}" method="POST" class="delete-backup-form">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="button" class="dropdown-item text-danger btn-delete-backup">
+                                                            <i class="bi bi-trash"></i> Hapus
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach

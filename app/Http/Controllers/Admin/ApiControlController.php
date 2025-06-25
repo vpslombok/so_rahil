@@ -130,7 +130,7 @@ class ApiControlController extends Controller
     public function index()
     {
         // Ambil log penggunaan REST API, urutkan terbaru, join user jika ada relasi
-        $logs = ApiLog::with('user')->orderByDesc('created_at')->limit(100)->get();
+        $logs = ApiLog::with('user')->orderByDesc('created_at')->limit(1000)->get();
 
         $endpoints = $this->apiEndpoints;
         $status = $this->getApiStatus();
@@ -139,6 +139,31 @@ class ApiControlController extends Controller
             'status' => $status,
             'logs' => $logs
         ]);
+    }
+
+    public function destroy($id)
+    {
+        $log = ApiLog::find($id);
+        if ($log) {
+            $log->delete();
+            return back()->with('success', 'Log berhasil dihapus.');
+        } else {
+            return back()->with('error', 'Log tidak ditemukan.');
+        }
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return back()->with('error', 'Tidak ada data yang dipilih.');
+        }
+        $deleted = ApiLog::whereIn('id', $ids)->delete();
+        if ($deleted) {
+            return back()->with('success', 'Berhasil menghapus ' . $deleted . ' log terpilih.');
+        } else {
+            return back()->with('error', 'Tidak ada log yang dihapus.');
+        }
     }
 
     public function toggle(Request $request)

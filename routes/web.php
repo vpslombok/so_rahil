@@ -181,14 +181,24 @@ Route::middleware(['auth'])->group(function () {
         //------------------------------------------------------------------
         // Rute untuk halaman log API (admin.api_log.index)
         //------------------------------------------------------------------
-        Route::get('/api-log', function () { // Akan menjadi admin.api_log.index
-            return "Halaman Log API (admin.api_log.index)";
-        })->name('api_log');
+        Route::get('/api-log', [\App\Http\Controllers\Admin\ApiControlController::class, 'index'])->name('api_log');
+        Route::delete('/api-log/bulk-delete', [\App\Http\Controllers\Admin\ApiControlController::class, 'bulkDestroy'])->name('api_log.bulk_delete');
+        Route::delete('/api-log/{id}', [\App\Http\Controllers\Admin\ApiControlController::class, 'destroy'])->name('api_log.delete');
 
         //------------------------------------------------------------------
         // Management REST API Control (Admin)
         //------------------------------------------------------------------
         Route::get('/api-control', [\App\Http\Controllers\Admin\ApiControlController::class, 'index'])->name('api_control.index');
         Route::post('/api-control/toggle', [\App\Http\Controllers\Admin\ApiControlController::class, 'toggle'])->name('api_control.toggle');
+    });
+
+    Route::prefix('admin/database')->middleware(['auth', 'admin'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\DatabaseUtilityController::class, 'index'])->name('admin.database.utility');
+        Route::get('/backup/create', [\App\Http\Controllers\Admin\DatabaseUtilityController::class, 'createBackup'])->name('admin.database.backup.create');
+        Route::post('/backup/upload', [\App\Http\Controllers\Admin\DatabaseUtilityController::class, 'uploadBackup'])->name('admin.database.backup.upload');
+        Route::get('/backup/download/{filename}', [\App\Http\Controllers\Admin\DatabaseUtilityController::class, 'downloadBackup'])->name('admin.database.backup.download');
+        Route::delete('/backup/delete/{filename}', [\App\Http\Controllers\Admin\DatabaseUtilityController::class, 'deleteBackup'])->name('admin.database.backup.delete');
+        Route::post('/backup/restore/{filename}', [\App\Http\Controllers\Admin\DatabaseUtilityController::class, 'restoreBackup'])->name('admin.database.backup.restore');
+        Route::get('/migrate', [\App\Http\Controllers\Admin\DatabaseUtilityController::class, 'runMigration'])->name('admin.database.migrate');
     });
 });

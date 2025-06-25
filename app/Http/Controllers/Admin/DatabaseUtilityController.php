@@ -226,8 +226,17 @@ class DatabaseUtilityController extends Controller
         $filename = 'backup_' . date('Ymd_His') . '.sql';
         $filePath = $backupPath . DIRECTORY_SEPARATOR . $filename;
 
+        // Cek jika SEMUA fungsi eksekusi proses eksternal dinonaktifkan
+        $disabled = array_map('trim', explode(',', ini_get('disable_functions')));
+        $exec_disabled = !function_exists('exec') || in_array('exec', $disabled);
+        $proc_open_disabled = !function_exists('proc_open') || in_array('proc_open', $disabled);
+
+        if ($exec_disabled && $proc_open_disabled) {
+            return redirect()->route('admin.database.utility')->with('error', 'Backup database otomatis tidak didukung di server ini karena fungsi exec() dan proc_open() dinonaktifkan. Silakan lakukan backup manual melalui phpMyAdmin/cPanel.');
+        }
+
         // Jika exec tersedia, gunakan mysqldump
-        if (function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))))) {
+        if (!$exec_disabled) {
             $db = config('database.connections.mysql.database');
             $user = config('database.connections.mysql.username');
             $pass = config('database.connections.mysql.password');
@@ -246,9 +255,9 @@ class DatabaseUtilityController extends Controller
             }
         }
 
-        // Jika exec tidak tersedia, coba gunakan spatie/db-dumper
+        // Jika exec tidak tersedia, coba gunakan spatie/db-dumper (proc_open)
         try {
-            if (class_exists('Spatie\DbDumper\Databases\MySql')) {
+            if (class_exists('Spatie\\DbDumper\\Databases\\MySql')) {
                 \Spatie\DbDumper\Databases\MySql::create()
                     ->setDbName(config('database.connections.mysql.database'))
                     ->setUserName(config('database.connections.mysql.username'))
@@ -307,6 +316,99 @@ class DatabaseUtilityController extends Controller
             return redirect()->back()->with('success', $successMsg);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menjalankan migrasi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload file backup database ke storage/app/backup
+     */
+    public function uploadBackup(Request $request)
+    {
+        $request->validate([
+            'backup_file' => 'required|file|mimes:sql,txt|max:10240', // max 10MB
+        ]);
+        $file = $request->file('backup_file');
+        $backupPath = storage_path('app/backup');
+        if (!is_dir($backupPath)) {
+            mkdir($backupPath, 0755, true);
+        }
+        $filename = 'upload_' . date('Ymd_His') . '_' . preg_replace('/[^a-zA-Z0-9_.-]/', '_', $file->getClientOriginalName());
+        $file->move($backupPath, $filename);
+        return redirect()->route('admin.database.utility')->with('success', 'File backup berhasil diupload: ' . $filename);
+    }
+
+    /**
+     * Restore database dari file backup (.sql)
+     * - Restore biasa: tidak drop tabel, error jika tabel sudah ada
+     * - Force restore: drop semua tabel (kecuali migrations) sebelum restore
+     */
+    public function restoreBackup($filename, Request $request = null)
+    {
+        $backupPath = storage_path('app/backup/' . $filename);
+        if (!file_exists($backupPath)) {
+            return redirect()->route('admin.database.utility')->with('error', 'File backup tidak ditemukan.');
+        }
+
+        // Cek fungsi eksekusi
+        $disabled = array_map('trim', explode(',', ini_get('disable_functions')));
+        $exec_disabled = !function_exists('exec') || in_array('exec', $disabled);
+        $proc_open_disabled = !function_exists('proc_open') || in_array('proc_open', $disabled);
+        if ($exec_disabled && $proc_open_disabled) {
+            return redirect()->route('admin.database.utility')->with('error', 'Restore otomatis tidak didukung di server ini karena fungsi exec() dan proc_open() dinonaktifkan. Silakan restore manual via phpMyAdmin/cPanel.');
+        }
+
+        // Jika force, drop semua views dan tabel dulu
+        $isForce = $request && $request->has('force');
+        if ($isForce) {
+            try {
+                DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+                // Drop all views first
+                $views = DB::select("SELECT table_name FROM information_schema.views WHERE table_schema = ?", [config('database.connections.mysql.database')]);
+                foreach ($views as $view) {
+                    DB::statement("DROP VIEW IF EXISTS `{$view->table_name}`;");
+                }
+                // Drop all tables except migrations (ambil key dinamis)
+                $tables = DB::select("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
+                if (!empty($tables)) {
+                    $tableKeys = array_keys((array)$tables[0]);
+                    $nameKey = $tableKeys[0]; // kolom nama tabel
+                    foreach ($tables as $table) {
+                        $tableName = $table->$nameKey;
+                        if ($tableName !== 'migrations') {
+                            DB::statement("DROP TABLE IF EXISTS `{$tableName}`;");
+                        }
+                    }
+                }
+                DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            } catch (\Exception $e) {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+                return redirect()->route('admin.database.utility')->with('error', 'Gagal drop tabel/views sebelum restore: ' . $e->getMessage());
+            }
+        }
+
+        // Restore hanya untuk MySQL
+        $db = escapeshellarg(config('database.connections.mysql.database'));
+        $user = escapeshellarg(config('database.connections.mysql.username'));
+        $pass = config('database.connections.mysql.password');
+        $host = escapeshellarg(config('database.connections.mysql.host'));
+        $port = escapeshellarg(config('database.connections.mysql.port', 3306));
+        $file = escapeshellarg($backupPath);
+
+        $passOpt = $pass !== '' ? "-p" . escapeshellarg($pass) : '';
+        $command = "mysql --user={$user} {$passOpt} --host={$host} --port={$port} {$db} < {$file} 2>&1";
+        $output = [];
+        $result = null;
+        exec($command, $output, $result);
+
+        if ($result === 0) {
+            $msg = $isForce ? 'Force restore database berhasil dari file: ' : 'Restore database berhasil dari file: ';
+            return redirect()->route('admin.database.utility')->with('success', $msg . $filename);
+        } else {
+            $errorMsg = $isForce ? 'Force restore database gagal.' : 'Restore database gagal.';
+            if (!empty($output)) {
+                $errorMsg .= ' Pesan error: ' . implode(' ', $output);
+            }
+            return redirect()->route('admin.database.utility')->with('error', $errorMsg);
         }
     }
 }
