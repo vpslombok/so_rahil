@@ -16,6 +16,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "maatwebsite/excel": "*",
+        "pusher/pusher-php-server": "^7.2",
         "spatie/db-dumper": "^3.8"
     },
     "require-dev": {

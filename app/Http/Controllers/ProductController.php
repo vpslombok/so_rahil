@@ -114,7 +114,6 @@ class ProductController extends Controller
         try {
             DB::transaction(function () use ($validator) {
                 $product = Product::create($validator->validated());
-
                 if (Auth::user()->role != 'admin') {
                     UserProductStock::create([
                         'user_id' => Auth::id(),
@@ -123,7 +122,8 @@ class ProductController extends Controller
                     ]);
                 }
             });
-
+            // Kirim notifikasi Pusher
+            event(new \App\Events\NotifikasiEvent('Produk baru berhasil ditambahkan!', null));
             return redirect()->route('dashboard', array_filter($redirectParams))
                 ->with('success_message_product', 'Produk berhasil ditambahkan!');
         } catch (\Exception $e) {
@@ -274,11 +274,11 @@ class ProductController extends Controller
                         // Log jika admin mencoba update stok untuk user_id_filter yang ada di form,
                         // tapi $userIdForStockUpdate tidak berhasil diset (misal, user_id_filter milik admin sendiri atau tidak valid)
                         Log::warning("Admin (ID: {$currentUser->id}) mencoba update stok untuk produk (ID: {$product->id}) dengan user_id_filter '{$request->input('user_id_filter')}' dari form, namun target user tidak valid atau merupakan admin.");
-
                     }
                 }
             });
-
+            // Kirim notifikasi Pusher
+            event(new \App\Events\NotifikasiEvent('Produk berhasil diperbarui!', null));
             return redirect()->route('dashboard', array_filter($redirectParams))
                 ->with('success_message_product', 'Produk berhasil diperbarui.');
         } catch (\Exception $e) {
@@ -302,13 +302,14 @@ class ProductController extends Controller
                 $product->userStocks()->delete();
                 $product->delete();
             });
-
+            // Kirim notifikasi Pusher
+            event(new \App\Events\NotifikasiEvent('Produk berhasil dihapus!', null));
             $redirectParams = [
                 'user_id_filter' => $request->query('user_id_filter'),
                 'event_id_filter' => $request->query('event_id_filter'),
-                'rack_id_filter' => $request->query('rack_id_filter'), // Tambahkan ini
-                'search_product' => $request->query('search_product'), // Ambil dari query string
-                'page' => $request->query('page') // Ambil dari query string
+                'rack_id_filter' => $request->query('rack_id_filter'),
+                'search_product' => $request->query('search_product'),
+                'page' => $request->query('page')
             ];
             return redirect()->route('dashboard', array_filter($redirectParams))
                 ->with('success_message_product', 'Produk berhasil dihapus.');

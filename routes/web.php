@@ -190,6 +190,14 @@ Route::middleware(['auth'])->group(function () {
         //------------------------------------------------------------------
         Route::get('/api-control', [\App\Http\Controllers\Admin\ApiControlController::class, 'index'])->name('api_control.index');
         Route::post('/api-control/toggle', [\App\Http\Controllers\Admin\ApiControlController::class, 'toggle'])->name('api_control.toggle');
+
+        //------------------------------------------------------------------
+        // Route tes Pusher
+        //------------------------------------------------------------------
+        Route::get('/pusher-test', function () {
+            event(new \App\Events\NotifikasiEvent('Tes notifikasi dari route /admin/pusher-test', null));
+            return 'NotifikasiEvent sudah dikirim ke channel notifikasi.global.';
+        })->name('pusher.test');
     });
 
     Route::prefix('admin/database')->middleware(['auth', 'admin'])->group(function () {
