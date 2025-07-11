@@ -194,11 +194,16 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $currentUser = Auth::user();
-        // Parameter filter akan diambil dari $request->only() di bawah,
-        // yang mencakup data dari body request (hidden inputs dari form).
+        // Ambil filter dari body (input) atau query string (jika ada)
+        $redirectParams = [
+            'user_id_filter' => $request->input('user_id_filter', $request->query('user_id_filter')),
+            'event_id_filter' => $request->input('event_id_filter', $request->query('event_id_filter')),
+            'rack_id_filter' => $request->input('rack_id_filter', $request->query('rack_id_filter')),
+            'search_product' => $request->input('search_product', $request->query('search_product')),
+            'page' => $request->input('page', $request->query('page')),
+        ];
 
         $rules = ['stock' => 'nullable|integer|min:0'];
-
         if ($currentUser->role == 'admin') {
             $rules = array_merge($rules, [
                 'barcode' => 'required|string|max:50|unique:products,barcode,' . $product->id,
@@ -210,16 +215,6 @@ class ProductController extends Controller
 
         $validator = Validator::make($request->all(), $rules);
 
-        // Siapkan parameter redirect (untuk jaga filter tetap tersimpan)
-        // Ambil semua parameter yang relevan dari request
-        $redirectParams = [
-            'user_id_filter' => $request->input('user_id_filter'),
-            'event_id_filter' => $request->input('event_id_filter'),
-            'rack_id_filter' => $request->input('rack_id_filter'), // Tambahkan ini
-            'search_product' => $request->input('search_product'), // Sesuaikan dengan nama input di form/JS
-            'page' => $request->input('page')
-        ];
-
         if ($validator->fails()) {
             return redirect()->route('dashboard', array_filter($redirectParams))
                 ->withErrors($validator, 'editProduct')
@@ -228,8 +223,6 @@ class ProductController extends Controller
         }
 
         try {
-            // Hapus $selectedUserId dari 'use' karena kita akan mengambilnya dari $request->input() di dalam closure
-            // untuk memastikan kita mendapatkan nilai yang disubmit dengan form.
             DB::transaction(function () use ($validator, $product, $currentUser, $request) {
                 $validated = $validator->validated();
                 $productDetailsToUpdate = [];
@@ -251,39 +244,37 @@ class ProductController extends Controller
                     $userIdForStockUpdate = null;
 
                     if ($currentUser->role == 'admin') {
-                        // Ambil user_id_filter dari data form yang disubmit
-                        $userIdFilterFromForm = $request->input('user_id_filter');
-
+                        $userIdFilterFromForm = $request->input('user_id_filter', $request->query('user_id_filter'));
                         if ($userIdFilterFromForm) {
                             $targetUser = User::find($userIdFilterFromForm);
                             if ($targetUser && $targetUser->role != 'admin') {
-                                $userIdForStockUpdate = $userIdFilterFromForm;
+                                $userIdForStockUpdate = $targetUser->id;
                             }
                         }
-                        // Jika $userIdFilterFromForm kosong atau user tidak valid, $userIdForStockUpdate akan tetap null, dan stok tidak akan diupdate untuk user spesifik oleh admin.
                     } else {
                         $userIdForStockUpdate = $currentUser->id;
                     }
 
                     if ($userIdForStockUpdate) {
                         UserProductStock::updateOrCreate(
-                            ['user_id' => $userIdForStockUpdate, 'product_id' => $product->id],
-                            ['stock' => $validated['stock']]
+                            [
+                                'user_id' => $userIdForStockUpdate,
+                                'product_id' => $product->id,
+                            ],
+                            [
+                                'stock' => $validated['stock'],
+                            ]
                         );
-                    } elseif ($currentUser->role == 'admin' && array_key_exists('stock', $validated) && !empty($request->input('user_id_filter'))) {
-                        // Log jika admin mencoba update stok untuk user_id_filter yang ada di form,
-                        // tapi $userIdForStockUpdate tidak berhasil diset (misal, user_id_filter milik admin sendiri atau tidak valid)
-                        Log::warning("Admin (ID: {$currentUser->id}) mencoba update stok untuk produk (ID: {$product->id}) dengan user_id_filter '{$request->input('user_id_filter')}' dari form, namun target user tidak valid atau merupakan admin.");
+                    } elseif ($currentUser->role == 'admin' && array_key_exists('stock', $validated) && !empty($userIdFilterFromForm)) {
+                        Log::warning("Admin (ID: {$currentUser->id}) mencoba update stok untuk produk (ID: {$product->id}) dengan user_id_filter '{$userIdFilterFromForm}' dari form, namun target user tidak valid atau merupakan admin.");
                     }
                 }
             });
-            // Kirim notifikasi Pusher
             event(new \App\Events\NotifikasiEvent('Produk berhasil diperbarui!', null));
             return redirect()->route('dashboard', array_filter($redirectParams))
                 ->with('success_message_product', 'Produk berhasil diperbarui.');
         } catch (\Exception $e) {
             Log::error('Update error: ' . $e->getMessage());
-
             return redirect()->route('dashboard', array_filter($redirectParams))
                 ->with('error_message_product', 'Gagal memperbarui produk.')
                 ->withInput()

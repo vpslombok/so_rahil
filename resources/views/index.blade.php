@@ -228,6 +228,47 @@
         @include('products.modals.create')
         @include('products.modals.import')
         @include('products.modals.edit')
+        <script>
+            // Inject hidden filter inputs into edit modal form on show
+            document.addEventListener('DOMContentLoaded', function() {
+                const editModal = document.getElementById('editProductModal');
+                if (editModal) {
+                    editModal.addEventListener('show.bs.modal', function(event) {
+                        const form = this.querySelector('form');
+                        if (!form) return;
+                        // Remove old hidden filter inputs
+                        form.querySelectorAll('.filter-hidden-input').forEach(e => e.remove());
+                        // Helper to get page from DOM or URL
+                        function getPageValue() {
+                            const pageInput = document.getElementById('page');
+                            if (pageInput) return pageInput.value;
+                            // Cek query string
+                            const params = new URLSearchParams(window.location.search);
+                            return params.get('page') || '';
+                        }
+                        // Add current filter values as hidden inputs
+                        const filters = ['user_id_filter', 'event_id_filter', 'rack_id_filter', 'search_product'];
+                        filters.forEach(f => {
+                            const val = document.getElementById(f)?.value || '';
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = f;
+                            input.value = val;
+                            input.classList.add('filter-hidden-input');
+                            form.appendChild(input);
+                        });
+                        // Handle page
+                        const pageVal = getPageValue();
+                        const pageInput = document.createElement('input');
+                        pageInput.type = 'hidden';
+                        pageInput.name = 'page';
+                        pageInput.value = pageVal;
+                        pageInput.classList.add('filter-hidden-input');
+                        form.appendChild(pageInput);
+                    });
+                }
+            });
+        </script>
         @include('products.modals.delete')
     </div>
     @endsection

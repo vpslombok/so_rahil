@@ -182,6 +182,7 @@
     ['route_name' => 'admin.api_log.index', 'active_pattern' => 'admin.api_log.*', 'icon' => 'bi-journal-text', 'text' => 'Log API'],
     ['route_name' => 'admin.flutter_app.manager', 'active_pattern' => 'admin.flutter_app.*', 'icon' => 'bi-phone-fill', 'text' => 'Upload Aplikasi Flutter'],
     ['route_name' => 'admin.database.utility', 'active_pattern' => 'admin.database.utility', 'icon' => 'bi-database-gear', 'text' => 'Utilitas Database'],
+    // ['route_name' => 'admin.api_control.index', 'active_pattern' => 'admin.api_control.*', 'icon' => 'bi-plug-fill', 'text' => 'Kontrol REST API'], // Dihapus sesuai permintaan
     ];
     }
     @endphp

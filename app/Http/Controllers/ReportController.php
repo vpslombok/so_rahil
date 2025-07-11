@@ -98,18 +98,72 @@ class ReportController extends Controller
      */
     public function destroyFinalizedStockOpnameGroup(Request $request)
     {
+        $authUser = Auth::user();
+
+        // Handle bulk delete
+        if ($request->has('bulk_nomor_nota')) {
+            $bulkNomorNota = $request->input('bulk_nomor_nota', []);
+            $bulkEventId = $request->input('bulk_stock_opname_event_id', []);
+            $bulkUserId = $request->input('bulk_user_id', []);
+            $deleted = 0;
+            $failed = 0;
+            DB::beginTransaction();
+            try {
+                foreach ($bulkNomorNota as $i => $nota) {
+                    $eventId = $bulkEventId[$i] ?? null;
+                    $userIdForDeletion = $bulkUserId[$i] ?? null;
+                    if (!$userIdForDeletion || (!$authUser || ($authUser->role !== 'admin' && $authUser->id != $userIdForDeletion))) {
+                        $failed++;
+                        continue;
+                    }
+                    $stockAuditQuery = StockAudit::where('user_id', $userIdForDeletion)
+                        ->where('nomor_nota', $nota);
+                    if (is_null($eventId) || $eventId === '' || $eventId === 'null') {
+                        $stockAuditQuery->whereNull('stock_opname_event_id');
+                    } else {
+                        $stockAuditQuery->where('stock_opname_event_id', $eventId);
+                    }
+                    $deletedStockAuditCount = $stockAuditQuery->delete();
+
+                    $tempStockEntryQuery = TempStockEntry::where('user_id', $userIdForDeletion)
+                        ->where('nomor_nota', $nota);
+                    if (is_null($eventId) || $eventId === '' || $eventId === 'null') {
+                        $tempStockEntryQuery->whereNull('stock_opname_event_id');
+                    } else {
+                        $tempStockEntryQuery->where('stock_opname_event_id', $eventId);
+                    }
+                    $tempStockEntryQuery->delete();
+                    if ($deletedStockAuditCount > 0) {
+                        $deleted++;
+                    }
+                }
+                DB::commit();
+                if ($deleted > 0) {
+                    return redirect()->route('stock_audit_report.summary')
+                        ->with('success_message', "$deleted data berhasil dihapus." . ($failed > 0 ? " ($failed gagal dihapus)" : ''));
+                } else {
+                    return redirect()->route('stock_audit_report.summary')
+                        ->with('error_message', 'Tidak ada data yang berhasil dihapus.');
+                }
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error("Gagal bulk delete data finalisasi SO: " . $e->getMessage());
+                return redirect()->route('stock_audit_report.summary')
+                    ->with('error_message', 'Terjadi kesalahan saat menghapus data finalisasi SO (bulk).');
+            }
+        }
+
+        // Single delete (default)
         $validated = $request->validate([
             'nomor_nota' => 'required|string',
             'stock_opname_event_id' => 'nullable|integer|exists:stock_opname_events,id',
             'user_id_for_deletion' => 'required|integer|exists:users,id',
         ]);
 
-        $authUser = Auth::user();
         $userIdForDeletion = $validated['user_id_for_deletion'];
         $nomorNota = $validated['nomor_nota'];
         $eventId = $validated['stock_opname_event_id']; // Bisa null
 
-        // Authorization: Admin can delete any, users can only delete their own.
         if ($authUser->role !== 'admin' && $authUser->id != $userIdForDeletion) {
             return redirect()->route('stock_audit_report.summary')
                 ->with('error_message', 'Anda tidak memiliki izin untuk menghapus data ini.');
@@ -117,10 +171,8 @@ class ReportController extends Controller
 
         DB::beginTransaction();
         try {
-            // Hapus dari StockAudit
             $stockAuditQuery = StockAudit::where('user_id', $userIdForDeletion)
-                                ->where('nomor_nota', $nomorNota);
-
+                ->where('nomor_nota', $nomorNota);
             if (is_null($eventId)) {
                 $stockAuditQuery->whereNull('stock_opname_event_id');
             } else {
@@ -128,17 +180,13 @@ class ReportController extends Controller
             }
             $deletedStockAuditCount = $stockAuditQuery->delete();
 
-            // Hapus juga dari TempStockEntry
             $tempStockEntryQuery = TempStockEntry::where('user_id', $userIdForDeletion)
-                                    ->where('nomor_nota', $nomorNota);
-
+                ->where('nomor_nota', $nomorNota);
             if (is_null($eventId)) {
                 $tempStockEntryQuery->whereNull('stock_opname_event_id');
             } else {
                 $tempStockEntryQuery->where('stock_opname_event_id', $eventId);
             }
-            // Tidak masalah jika tidak ada yang terhapus dari temp_stock_entries,
-            // karena fokus utama adalah penghapusan dari stock_audits.
             $tempStockEntryQuery->delete();
 
             DB::commit();

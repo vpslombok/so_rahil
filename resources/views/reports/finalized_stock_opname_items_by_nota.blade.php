@@ -3,13 +3,13 @@
 @section('title', 'Detail Laporan Selisih Stok Nota: ' . $nomor_nota)
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-3 px-1 px-md-3">
     <div class="row justify-content-center">
-        <div class="col-lg-10 col-xl-9">
+        <div class="col-12 col-md-11 col-lg-10">
             <div class="card shadow rounded-4 border-0">
-                <div class="card-header bg-gradient-primary text-white rounded-top-4 d-flex align-items-center justify-content-between">
-                    <h4 class="mb-0"><i class="fas fa-receipt me-2"></i>Detail Selisih Stok untuk Nota: <span class="badge bg-light text-primary">{{ $nomor_nota }}</span></h4>
-                    <a href="{{ route('stock_audit_report.summary') }}" class="btn btn-light btn-sm">
+                <div class="card-header bg-gradient-primary text-white rounded-top-4 d-flex align-items-center flex-wrap justify-content-between">
+                    <h4 class="mb-0"><i class="fas fa-receipt me-2"></i>Detail Selisih Stok Nota: <span class="badge bg-light text-primary">{{ $nomor_nota }}</span></h4>
+                    <a href="{{ route('stock_audit_report.summary') }}" class="btn btn-light btn-sm mt-2 mt-md-0">
                         <i class="fas fa-arrow-left"></i> Kembali ke Ringkasan
                     </a>
                 </div>
@@ -20,34 +20,37 @@
                         <h5 class="text-secondary mb-2">Tidak ada detail item yang ditemukan untuk nomor nota ini atau Anda tidak memiliki akses.</h5>
                     </div>
                     @else
-                    <div class="mb-3">
-                        <span class="me-4"><strong>Event SO:</strong> <span class="badge bg-info text-dark">{{ $stockAuditDetails->first()->stockOpnameEvent->name ?? 'N/A' }}</span></span>
-                        <span class="me-4"><strong>Finalisasi Oleh:</strong> <span class="badge bg-secondary">{{ $stockAuditDetails->first()->user->username ?? 'N/A' }}</span></span>
-                        <span><strong>Tanggal Finalisasi:</strong> <i class="far fa-calendar-check text-success"></i> <span class="ms-1">{{ $stockAuditDetails->first()->checked_at ? \Carbon\Carbon::parse($stockAuditDetails->first()->checked_at)->isoFormat('D MMMM YYYY, HH:mm') : '-' }}</span></span>
-                        <span class="me-4"><strong>Alasan:</strong> <span class="badge bg-warning text-dark">{{ $stockAuditDetails->first()->notes ?? 'N/A' }}</span></span>
+                    <!-- HEADER INFO FINALISASI (ambil dari baris pertama)-->
+                    @php $first = $stockAuditDetails->first(); @endphp
+                    <div class="row mb-3 g-2">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="small text-muted">Event SO</div>
+                            <div class="fw-semibold">{{ $first->stockOpnameEvent->name ?? '-' }}</div>
+                        </div>
+                        <div class="col-6 col-md-3 col-lg-2">
+                            <div class="small text-muted">Nomor Nota</div>
+                            <div class="fw-semibold">{{ $first->nomor_nota ?? '-' }}</div>
+                        </div>
+                        <div class="col-6 col-md-3 col-lg-2">
+                            <div class="small text-muted">Tanggal Finalisasi</div>
+                            <div class="fw-semibold">{{ $first->checked_at ? \Carbon\Carbon::parse($first->checked_at)->isoFormat('D MMM YYYY, HH:mm') : '-' }}</div>
+                        </div>
+                        <div class="col-6 col-md-3 col-lg-2">
+                            <div class="small text-muted">User</div>
+                            <div class="fw-semibold">{{ $first->user->username ?? '-' }}</div>
+                        </div>
+                        <div class="col-6 col-md-3 col-lg-2">
+                            <div class="small text-muted">Catatan</div>
+                            <div class="fw-semibold">{{ $first->notes ?? '-' }}</div>
+                        </div>
                     </div>
-                    @if($stockAuditDetails->isNotEmpty())
-                    @php
-                    $allNotes = $stockAuditDetails->pluck('notes')->filter()->unique()->values();
-                    @endphp
-                    @if($allNotes->isNotEmpty())
-                    <div class="alert alert-info mb-3">
-                        <strong>Catatan Finalisasi:</strong>
-                        <ul class="mb-0 ps-3">
-                            @foreach($allNotes as $note)
-                            <li>{{ $note }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
-                    @endif
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle bg-white rounded shadow-sm">
+                        <table class="table table-bordered table-hover align-middle bg-white rounded shadow-sm mb-0">
                             <thead class="thead-light">
                                 <tr>
                                     <th>Kode</th>
                                     <th>Barcode</th>
-                                    <th>Produk (SKU)</th>
+                                    <th>Produk</th>
                                     <th class="text-end">Stok Sistem</th>
                                     <th class="text-end">Stok Fisik</th>
                                     <th class="text-end">Selisih</th>
@@ -59,10 +62,9 @@
                                 <tr>
                                     <td>{{ $detail->product->product_code ?? '-' }}</td>
                                     <td>{{ $detail->product->barcode ?? '-' }}</td>
-                                    <td>
-                                        <span class="fw-bold">{{ $detail->product->name ?? 'N/A' }}</span>
+                                    <td class="fw-semibold">{{ $detail->product->name ?? 'N/A' }}
                                         @if($detail->product && $detail->product->sku)
-                                        <small class="d-block text-muted">({{ $detail->product->sku }})</small>
+                                        <small class="d-block d-sm-none text-muted">({{ $detail->product->sku }})</small>
                                         @endif
                                     </td>
                                     <td class="text-end">{{ number_format($detail->system_stock, 0, ',', '.') }}</td>
@@ -105,6 +107,7 @@
     .table th,
     .table td {
         vertical-align: middle;
+        word-break: break-word;
     }
 
     .table thead th {
@@ -116,6 +119,25 @@
         font-size: 0.95em;
         padding: 0.5em 0.8em;
         border-radius: 0.7em;
+    }
+
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #dee2e6 !important;
+    }
+
+    @media (max-width: 575.98px) {
+
+        .table th,
+        .table td {
+            font-size: 0.93em;
+            padding: 0.4em 0.2em;
+        }
+
+        .container-fluid {
+            padding-left: 0.2rem !important;
+            padding-right: 0.2rem !important;
+        }
     }
 </style>
 @endpush

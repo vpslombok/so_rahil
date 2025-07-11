@@ -377,6 +377,16 @@ class SelectableSoEventController extends Controller
         $nomorNota = $validated['nomor_nota'];
         $note = $validated['note'] ?? null;
 
+        // Simpan log data request finalizeSoEvent
+        \Log::info('[finalizeSoEvent] Request', [
+            'user_id' => $user ? $user->id : null,
+            'user_name' => $user ? $user->name : null,
+            'request_data' => $request->all(),
+            'raw_body' => $request->getContent(),
+            'headers' => $request->headers->all(),
+            'ip' => $request->ip(),
+        ]);
+
         // Cek apakah sudah pernah difinalisasi
         $alreadyFinalized = \App\Models\StockAudit::where('user_id', $user->id)
             ->where('stock_opname_event_id', $eventId)
@@ -423,7 +433,7 @@ class SelectableSoEventController extends Controller
                     'physical_stock' => $physicalStock,
                     'difference' => $difference,
                     'audit_timestamp' => now(),
-                    'note' => $note,
+                    'notes' => $note,
                 ]);
             }
             \DB::commit();
@@ -479,7 +489,7 @@ class SelectableSoEventController extends Controller
                 'nomor_nota' => $first->nomor_nota,
                 'event_detail' => $event ? $event : (object)[],
                 'finalized_at' => $first->checked_at ? \Carbon\Carbon::parse($first->checked_at)->format('Y-m-d H:i') : null,
-                'note' => $first->note ?? 'tidak ada',
+                'note' => $first->notes ?? 'tidak ada',
                 'products' => $entries->map(function ($item) {
                     // Lengkapi data produk jika null
                     $productName = $item->product_name;
